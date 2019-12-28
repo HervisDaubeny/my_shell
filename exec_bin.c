@@ -4,39 +4,69 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
+#include <err.h>
+#include <stdarg.h>
+#include <string.h>
 
-#define PATH "/bin:/usr/bin"
-
+/* Function that executes binary given as argument. */
 int exec_bin(char** binary) {
 	pid_t pid = fork();
-	int exec_val = 0;
+	int child_exit = 253;
+	int wstatus = 0;
 
 	if(pid == 0) {
-		//In child process
+		// In child process
 	    	if (execvp(binary[0], binary) < 0) {
 			if (errno == 2) {
-				//TODO: cover known errnos
+				char buf[1024] = "hdsh: command not found: ";
+				strcat(buf, binary[0]);
+				strcat(buf, "\n");
+				write(STDERR_FILENO, buf, sizeof(buf) - 1);
+				child_exit = 127;
 			}
-
-			printf("Couldn't execute, errno: %d\n", errno);
+			#ifdef TEST
+			else {
+				printf("Couldn't execute, errno: %d\n", errno);
+			}
+			#endif
 		}
-		exit(0);
+
+		//If 253 is returned I'm getting a different errno.
+		exit(child_exit);
 	}
 	else if (pid == -1) {
-		return 1;
+		/*
+		 * Something bad happend while forking. It really shouldn't re-
+		 * turn 254 specifically to know it was this.
+		 */
+		return 254;
 	}
 	else {
-		wait(NULL);
+		// In parrent process
+		wait(&wstatus);
+
+		if (!WIFEXITED(wstatus)) {
+			/*
+			 * perhaps signals will lead here, for now just print
+			 * and return specifically 255
+			 */
+			printf("Child did not exit normally!\n");
+			return 255;
+		}
+		child_exit = WEXITSTATUS(wstatus);
 	}
 
-	return exec_val;
+	return child_exit;
 }
 
+#ifdef TEST
 int main() {
-	 char* binary[] = {"s", "-l", "-a", NULL};
+	 char* binary[] = {"s", "l",  NULL};
 	 int res = 0;
 
 	 res = exec_bin(binary);
+	 printf("%d user@device /current/directory %s ...\n", (int)res, "%");
 
-	 return 0;
+	 return res;
 }
+#endif
