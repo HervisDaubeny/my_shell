@@ -1,30 +1,56 @@
-#!/bin/bash
-
-CC = gcc
-CFLAGS = -Wall -Wextra
+#!/bin/bash CC = gcc
+F = flex
+S = src/
+CFLAGS = -I headers -Wall -Wextra -g
 TFLAGS = -D TEST
 
-PARTS = exec_bin
-TTARGETS = texec_bin
+TTARGETS = texec_bin tget_cmd
+MYSH_OBJECTS = mysh.o ch_dir.o exit.o exec_bin.o lex.yy.o 
+REMOVE = mysh lex.yy.c
 
 .PHONY: all clean test
 
-all: $(PARTS)
+all: mysh
 
-# create PARTS from item.o in PARTS
-%: %.o
-	$(CC) $(CFLAGS) $< -o $@
+mysh: $(MYSH_OBJECTS)
+	$(CC) -o mysh $(MYSH_OBJECTS) -l readline
 
-%.o: %.c
+mysh.o: $(S)mysh.c
 	$(CC) $(CFLAGS) -c $<
 
-test: $(TTARGETS)
+ch_dir.o: $(S)ch_dir.c
+	$(CC) $(CFLAGS) -c $<
+	
+exit.o: $(S)exit.c
+	$(CC) $(CFLAGS) -c $<
 
-texec_bin: exec_bin.o
-	$(CC) $< -o $@
+exec_bin.o: $(S)exec_bin.c
+	$(CC) $(CFLAGS) -c $<
 
-%.o: %.c
-	$(CC) $(TFLAGS) $(CFLAGS) -c $<
+lex.yy.o: lex.yy.c 	#replaces get_cmds.o
+	$(CC) -I headers -w -c $<
+	# -w here is to ignore flex's unused variables, not mine warnings
+
+lex.yy.c: $(S)get_cmds.c
+	$(F) $<
+
+#test: $(TTARGETS)
+#
+#texec_bin: exec_bin.o
+#	$(CC) $< -o $@
+#
+#texec_bin.o: exec_bin.c
+#	$(CC) $(TFLAGS) $(CFLAGS) -c $<
+#
+#lex.yy.o: lex.yy.c
+#	$(CC) -w -c $<
+#	-w here is to ignore flex's unused variables, not mine warnings
+#
+#lex.yy.c: get_cmds.c
+#	$(F) $<
+#
+#%.o: %.c
+#	$(CC) $(TFLAGS) $(CFLAGS) -c $<
 
 clean:
-	@rm -fv *.o $(TTARGETS)
+	@rm -fv *.o $(TTARGETS) $(REMOVE)
