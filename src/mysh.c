@@ -53,6 +53,7 @@ int main(int argc, char* const* argv) {
 		}
 	}
 
+	set_env();
 	if(optind < argc) {
 		/* there is file to be read.. and possibly filthy hobitsses */
 
@@ -67,11 +68,11 @@ int main(int argc, char* const* argv) {
 int interactive_run() {
 	int rval = 0;
 	char* line = NULL;
-	char* pr = malloc(128);
+	char* prompt;
 
 	while(1) {
-		sprintf(pr, "%d $ ", rval);
-		line = readline(pr);
+		prompt = get_prompt();
+		line = readline(prompt);
 		if(line == NULL) {
 			printf("exit\n");
 			break;
@@ -80,11 +81,11 @@ int interactive_run() {
 		rval = execute_line(line);
 		add_history(line);
 
+		free(prompt);
 		free(line);
 		line = NULL;
 	}
 
-	free(pr);
 	return rval;
 }
 
@@ -94,6 +95,24 @@ int execute_line(char* line) {
 	struct command* commands = get_coms(line, &cmdc);
 
 	for(int i = 0; i < cmdc; i++){
+		if((commands + i)->argc == 1) {
+			if(i + 1 < cmdc) {
+				char* buff = malloc(128);
+				char* msg =\
+				"Shelly: syntax error near unexpected token";
+				sprintf(buff, "%s: '%c'\n", msg,\
+				(commands + 1)->sep);
+				write(STDERR_FILENO, buff, strlen(buff));
+
+				free(buff);
+				rval = 2;
+
+				break;
+			}
+			else {
+				break;
+			}
+		}
 		if(strcmp(*((commands + i)->value), "cd") == 0) {
 			rval = call_cd(commands + i);
 		}
@@ -109,6 +128,14 @@ int execute_line(char* line) {
 	return rval;
 }
 
+void set_env() {
+	cwd = getcwd(NULL, (size_t)0);
+	if((lwd = getenv("OLDPWD")) == NULL) {
+		lwd = malloc(strlen(cwd));
+		lwd = strcpy(lwd, cwd);
+	}
+}
+
 void free_commands(struct command* commands, int cmdc) {
 	for(int i = 0; i < cmdc; i++) {
 		free((commands + i)->value);
@@ -118,16 +145,17 @@ void free_commands(struct command* commands, int cmdc) {
 }
 
 char* get_prompt() {
-	char* prompt = malloc(128 * sizeof(char));
+	char* prompt;
 	char* cwd;
 	cwd = getcwd(NULL, (size_t)0);
+	prompt = malloc(strlen(cwd) + 4);
 
 	if(rval > 0) {
-		sprintf(prompt, "%d %s$ ", rval, cwd);
+		sprintf(prompt, "%d %s $ ", rval, cwd);
 	}
 	else {
 
-		sprintf(prompt, "%s$ ", cwd);
+		sprintf(prompt, "%s $ ", cwd);
 	}
 
 	free(cwd);

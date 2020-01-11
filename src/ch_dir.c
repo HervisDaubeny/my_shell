@@ -7,28 +7,43 @@
 #include "ch_dir.h"
 
 int cd(char** path, int argc, char* lastd) {
+	int rval = 0;
+
 	if(argc > 3) {
 		char* mess = "Shelly: cd: too many arguments\n";
 		write(STDERR_FILENO, mess, strlen(mess));
 
 		return 1;
 	}
+	else if(argc == 2) {
+		rval = change_dir(getenv("HOME"));
+
+		return rval;
+	}
 	else if(argc < 2) {
 		printf("cd was given a not NULL terminated array!\n");
 		exit(1);
 	}
 
-	if(strcmp(*(path + 1), "~") == 0 || strcmp(*(path + 1), "") == 0) {
-		*(path + 1) = getenv("HOME");
+	if(strcmp(*(path + 1), "~") == 0) {
+		rval = change_dir(getenv("HOME"));
 	}
 	else if(strcmp(*(path + 1), "-") == 0) {
-		*path = lastd;
+		rval = change_dir(lastd);
 	}
-	if(chdir(*(path + 1)) < 0) {
+	else {
+		rval = change_dir(*(path + 1));
+	}
+
+	return rval;
+}
+
+int change_dir(char* target) {
+	if((chdir(target)) < 0) {
 		if(errno == 2) {
 			char* buff = malloc(254);
 			char* mess = "Shelly: cd: no such file or directory:";
-			sprintf(buff, "%s %s\n", mess, *(path + 1));
+			sprintf(buff, "%s %s\n", mess, target);
 			write(STDERR_FILENO, buff, strlen(buff));
 
 			free(buff);

@@ -10,16 +10,13 @@
 
 #include "get_cmds.h"
 
-int add_cmd();
-int add_arg();
-int clean_args();
-int clean_cmds();
-
 int cmdc = 0;
 int argc = 0;
+char sep = '\0';
 
 struct cmd {
 	char** binary;
+	char sep;
 	int argc;
 	TAILQ_ENTRY(cmd) nextc;
 };
@@ -39,6 +36,7 @@ TAILQ_HEAD(arghead, arg) args;
 	#ifdef TEST
 	printf("%s %s\n",yytext, "semicol");
 	#endif
+	sep = ';';
 	add_arg(NULL); /* to secure NULL termination */
 	add_cmd();
 }
@@ -48,6 +46,7 @@ TAILQ_HEAD(arghead, arg) args;
 	printf("%s %s\n",yytext, "eol");
 	#endif
 	if (argc > 0) {
+		sep = '\n';
 		add_arg(NULL); /* to secure NULL termination */
 		add_cmd();
 	}
@@ -97,6 +96,7 @@ struct command* get_coms(char* line, int* command_count) {
 	TAILQ_FOREACH(iterate, &cmds, nextc) {
 		(result + i)->value = iterate->binary;
 		(result + i)->argc = iterate->argc;
+		(result + i)->sep = iterate->sep;
 		#ifdef TEST
 		printf("result value at: %p\n", (result + i)->value);
 		for (int j = 0; j < (result + i)->argc; j++) {
@@ -155,9 +155,11 @@ int add_cmd() {
 	
 	new_cmd->binary = cmd_args;
 	new_cmd->argc = argc;
+	new_cmd->sep = sep;
 	TAILQ_INSERT_TAIL(&cmds, new_cmd, nextc);
 
 	cmdc++;
+	sep = '\0';
 	clean_args();
 
 	#ifdef TEST

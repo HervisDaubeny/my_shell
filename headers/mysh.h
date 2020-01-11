@@ -3,6 +3,7 @@
 
 #include "utils.h"
 
+void set_env();
 int interactive_run();
 int execute_line();
 char* get_prompt();

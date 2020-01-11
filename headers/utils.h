@@ -3,6 +3,7 @@
 
 struct command {
 	char** value;
+	char sep;
 	int argc; /* null terminating included */
 };
 #endif
