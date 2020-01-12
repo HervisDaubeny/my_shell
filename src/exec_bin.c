@@ -8,15 +8,17 @@
 
 #include "exec_bin.h"
 
-int exec_bin(char** binary) {
-	pid_t pid = fork();
-	int child_exit = 253;
-	int wstatus = 0;
+pid_t pid;
 
+int exec_bin(char** binary) {
+	int child_exit = 253;
+	signal(SIGINT, child_killer);
+
+	pid = fork();
 	if(pid == 0) {
 		// In child process
-	    	if (execvp(binary[0], binary) < 0) {
-			if (errno == 2) {
+	    	if(execvp(binary[0], binary) < 0) {
+			if(errno == 2) {
 				char* buff = malloc(1024);
 				char* mess = "Shelly: command not found:";
 				sprintf(buff, "%s %s\n", mess, binary[0]);
@@ -33,7 +35,7 @@ int exec_bin(char** binary) {
 		//If 253 is returned I'm getting a different errno.
 		exit(child_exit);
 	}
-	else if (pid == -1) {
+	else if(pid == -1) {
 		/*
 		 * Something bad happend while forking. It really shouldn't re-
 		 * turn 254 specifically to know it was this.
@@ -42,20 +44,24 @@ int exec_bin(char** binary) {
 	}
 	else {
 		// In parrent process
+		int wstatus = 0;
+
 		wait(&wstatus);
 
-		if (!WIFEXITED(wstatus)) {
-			/*
-			 * perhaps signals will lead here, for now just print
-			 * and return specifically 255
-			 */
-			printf("Child did not exit normally!\n");
-			return 255;
+		if(WIFEXITED(wstatus)) {
+			child_exit = WEXITSTATUS(wstatus);
 		}
-		child_exit = WEXITSTATUS(wstatus);
+		if(WIFSIGNALED(wstatus)) {
+			printf("\n");
+			child_exit = 128 + WTERMSIG(wstatus);
+		}
 	}
 
 	return child_exit;
+}
+
+void child_killer(int sig) {
+	kill(pid, sig);
 }
 
 #ifdef TEST

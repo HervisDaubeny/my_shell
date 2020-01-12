@@ -4,8 +4,9 @@
 #include "utils.h"
 
 void set_env();
-int interactive_run();
-int execute_line();
+void interactive_run();
+void execute_line();
+void sig_handler(int);
 char* get_prompt();
 void free_commands(struct command*, int);
 int call_cd(struct command*);

@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <signal.h>
 #include <readline/readline.h>
 #include <readline/history.h>
 
@@ -31,7 +32,7 @@ int main(int argc, char* const* argv) {
 		char* mess;
 		switch(opt){
 			case 'c':
-				rval = execute_line(optarg);
+				execute_line(optarg);
 				return rval;
 			case ':':
 				buff = malloc(128);
@@ -60,17 +61,17 @@ int main(int argc, char* const* argv) {
 		//return ...
 	}
 
-	rval = interactive_run();
+	interactive_run();
 
 	return rval;
 }
 
-int interactive_run() {
-	int rval = 0;
+void interactive_run() {
 	char* line = NULL;
 	char* prompt;
 
 	while(1) {
+		signal(SIGINT, sig_handler);
 		prompt = get_prompt();
 		line = readline(prompt);
 		if(line == NULL) {
@@ -78,20 +79,16 @@ int interactive_run() {
 			break;
 		}
 
-		rval = execute_line(line);
 		add_history(line);
+		execute_line(line);
 
 		free(prompt);
 		free(line);
 		line = NULL;
 	}
-
-	return rval;
 }
 
-int execute_line(char* line) {
-	int rval = 0;
-
+void execute_line(char* line) {
 	struct command* commands = get_coms(line, &cmdc);
 
 	for(int i = 0; i < cmdc; i++){
@@ -123,9 +120,22 @@ int execute_line(char* line) {
 			rval = exec_bin((commands + i)->value);
 		}
 	}
-	free_commands(commands, cmdc);
 
-	return rval;
+	free_commands(commands, cmdc);
+}
+
+void sig_handler(int sig) {
+	printf("\n");
+	rval = 128 + sig;
+	char* prompt = get_prompt();
+
+	rl_set_prompt(prompt);
+	rl_on_new_line();
+	rl_replace_line("", 0);
+	rl_redisplay();
+
+	signal(SIGINT, sig_handler);
+	free(prompt);
 }
 
 void set_env() {
@@ -138,6 +148,9 @@ void set_env() {
 
 void free_commands(struct command* commands, int cmdc) {
 	for(int i = 0; i < cmdc; i++) {
+		for(int j = 0; j < (commands + i)->argc; j++) {
+			free(*((commands + i)->value + j));
+		}
 		free((commands + i)->value);
 	}
 
@@ -164,21 +177,22 @@ char* get_prompt() {
 }
 
 int call_cd(struct command* cmd) {
-	int ret;
+	int ret = 0;
 	char* tmp = malloc(128);
 	strcpy(tmp, cwd);
 
 	ret = cd(cmd->value, cmd->argc, lwd);
-	if(ret == 0) {
+	if(rval == 0) {
 		strcpy(lwd, tmp);
 	}
 	free(tmp);
 
-	return rval;
+	return ret;
 }
 
 int call_exit(struct command* cmd) {
-	int ret = ext(cmd, rval);
+	int ret = 0;
+	ret = ext(cmd, rval);
 
 	return ret;
 }
