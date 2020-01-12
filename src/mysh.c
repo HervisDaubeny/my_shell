@@ -12,6 +12,7 @@
 #include "get_cmds.h"
 #include "exec_bin.h"
 #include "utils.h"
+#include "fd_readl.h"
 
 static int rval;
 static int cmdc;
@@ -21,10 +22,6 @@ static char* lwd;
 int main(int argc, char* const* argv) {
 	rval = 0;
 	cmdc = 0;
-	cwd = malloc(128);
-	lwd = malloc(128);
-	char* line;
-	char* prompt;
 
 	int opt;
 	while((opt = getopt(argc, argv, ":c:")) != -1) {
@@ -56,14 +53,30 @@ int main(int argc, char* const* argv) {
 
 	set_env();
 	if(optind < argc) {
-		/* there is file to be read.. and possibly filthy hobitsses */
-
-		//return ...
+		run_script(argv[1]);
+	}
+	else {
+		interactive_run();
 	}
 
-	interactive_run();
-
 	return rval;
+}
+
+void run_script(char* file) {
+	int eof = 0;
+	int fd = fd_open(file);
+
+	while(1) {
+		char* line = fd_getl(fd, &eof);
+		execute_line(line);
+
+		free(line);
+		if(eof || rval) {
+			break;
+		}
+	}
+
+	fd_close(fd);
 }
 
 void interactive_run() {
@@ -76,6 +89,8 @@ void interactive_run() {
 		line = readline(prompt);
 		if(line == NULL) {
 			printf("exit\n");
+
+			free(prompt);
 			break;
 		}
 
@@ -90,34 +105,42 @@ void interactive_run() {
 
 void execute_line(char* line) {
 	struct command* commands = get_coms(line, &cmdc);
+	int cc = 1;
 
-	for(int i = 0; i < cmdc; i++){
+	for(int i = 0; i < cmdc; i++) {
 		if((commands + i)->argc == 1) {
-			if(i + 1 < cmdc) {
+			if(i + 1 < cmdc || *((commands + i)->value) == NULL) {
 				char* buff = malloc(128);
 				char* msg =\
 				"Shelly: syntax error near unexpected token";
 				sprintf(buff, "%s: '%c'\n", msg,\
-				(commands + 1)->sep);
+				(commands + i)->sep);
 				write(STDERR_FILENO, buff, strlen(buff));
 
 				free(buff);
 				rval = 2;
+				cc = 0;
 
 				break;
+
 			}
 			else {
 				break;
 			}
 		}
-		if(strcmp(*((commands + i)->value), "cd") == 0) {
-			rval = call_cd(commands + i);
-		}
-		else if(strcmp(*((commands + i)->value), "exit") == 0) {
-			rval = call_exit(commands + i);
-		}
-		else {
-			rval = exec_bin((commands + i)->value);
+	}
+
+	if(cc) {
+		for(int i = 0; i < cmdc; i++) {
+			if(strcmp(*((commands + i)->value), "cd") == 0) {
+				rval = call_cd(commands + i);
+			}
+			else if(strcmp(*((commands + i)->value), "exit") == 0) {
+				rval = call_exit(commands + i);
+			}
+			else {
+				rval = exec_bin((commands + i)->value);
+			}
 		}
 	}
 
@@ -159,19 +182,19 @@ void free_commands(struct command* commands, int cmdc) {
 
 char* get_prompt() {
 	char* prompt;
-	char* cwd;
-	cwd = getcwd(NULL, (size_t)0);
-	prompt = malloc(strlen(cwd) + 4);
+	char* cuwd;
+	cuwd = getcwd(NULL, (size_t)0);
+	prompt = malloc(strlen(cuwd) + 9);
 
 	if(rval > 0) {
-		sprintf(prompt, "%d %s $ ", rval, cwd);
+		sprintf(prompt, "%d %s $ ", rval, cuwd);
 	}
 	else {
 
-		sprintf(prompt, "%s $ ", cwd);
+		sprintf(prompt, "%s $ ", cuwd);
 	}
 
-	free(cwd);
+	free(cuwd);
 
 	return prompt;
 }
@@ -185,8 +208,10 @@ int call_cd(struct command* cmd) {
 	if(rval == 0) {
 		strcpy(lwd, tmp);
 	}
+	free(cwd);
 	free(tmp);
 
+	cwd = getcwd(NULL, (size_t)0);
 	return ret;
 }
 

@@ -52,7 +52,7 @@ TAILQ_HEAD(arghead, arg) args;
 	}
 }
 
-#* {     /* ignore to the $ */
+#.* {     /* ignore to the $ */
 	#ifdef TEST
 	printf("%s %s\n",yytext, "comment");
 	#endif
@@ -107,6 +107,7 @@ struct command* get_coms(char* line, int* command_count) {
 	}
 	*command_count = cmdc;
 	clean_cmds();
+	yylex_destroy();
 
 	return result;
 }
@@ -116,7 +117,7 @@ int add_arg(char* text) {
 	char* value;
 
 	if(text != NULL){
-		value = malloc(strlen(text));
+		value = malloc(strlen(text) + 1);
 
 		if (new_arg == NULL || value == NULL) {
 			printf("%s\n", "Error during malloc for arg!");

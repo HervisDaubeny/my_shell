@@ -4,6 +4,8 @@
 #include "utils.h"
 
 void set_env();
+void free_env();
+void run_script(char*);
 void interactive_run();
 void execute_line();
 void sig_handler(int);

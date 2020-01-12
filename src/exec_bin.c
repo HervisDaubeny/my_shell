@@ -52,7 +52,6 @@ int exec_bin(char** binary) {
 			child_exit = WEXITSTATUS(wstatus);
 		}
 		if(WIFSIGNALED(wstatus)) {
-			printf("\n");
 			child_exit = 128 + WTERMSIG(wstatus);
 		}
 	}
@@ -62,6 +61,7 @@ int exec_bin(char** binary) {
 
 void child_killer(int sig) {
 	kill(pid, sig);
+	printf("Killed by signal %d.\n", sig);
 }
 
 #ifdef TEST
