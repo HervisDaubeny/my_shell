@@ -1,3 +1,4 @@
+#define _XOPEN_SOURCE 700
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -7,25 +8,31 @@
 #include <unistd.h>
 
 #include "exec_bin.h"
+#include "utils.h"
 
 pid_t pid;
 
 int exec_bin(char** binary) {
 	int child_exit = 253;
-	signal(SIGINT, child_killer);
-
+	struct sigaction signalAction;
+    signalAction.sa_handler = child_killer;
+    
+    sigaction(SIGINT, &signalAction, NULL);
+    
 	pid = fork();
 	if(pid == 0) {
 		// In child process
 	    	if(execvp(binary[0], binary) < 0) {
 			if(errno == 2) {
-				char* buff = malloc(1024);
-				char* mess = "Shelly: command not found:";
+				char* buff;
+				char* mess;
+				MALLOC(buff, 1024);
+				mess = "Shelly: command not found:";
 				sprintf(buff, "%s %s\n", mess, binary[0]);
 				write(STDERR_FILENO, buff, strlen(buff));
 				child_exit = 127;
 
-				free(buff);
+				FREE(buff);
 			}
 			else {
 				printf("Couldn't execute, errno: %d\n", errno);

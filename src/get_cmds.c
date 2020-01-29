@@ -9,6 +9,7 @@
 #include <stdbool.h>
 
 #include "get_cmds.h"
+#include "utils.h"
 
 int cmdc = 0;
 int argc = 0;
@@ -87,24 +88,20 @@ struct command* get_coms(char* line, int* command_count) {
 		add_cmd();
 	}
 
-	result = malloc(cmdc * sizeof(struct command));
-	if (result == NULL) {
-		printf("Error in mallock of result\n");
-		exit(1);
-	}
-
+	MALLOC(result, (cmdc * sizeof(struct command)));
 	TAILQ_FOREACH(iterate, &cmds, nextc) {
 		(result + i)->value = iterate->binary;
 		(result + i)->argc = iterate->argc;
 		(result + i)->sep = iterate->sep;
 		#ifdef TEST
-		printf("result value at: %p\n", (result + i)->value);
-		for (int j = 0; j < (result + i)->argc; j++) {
-			printf("%s at %p\n", *((result + i)->value + j), (result + i)->value + j);
-		}
+			printf("result value at: %p\n", (result + i)->value);
+			for (int j = 0; j < (result + i)->argc; j++) {
+				printf("%s at %p\n", *((result + i)->value + j), (result + i)->value + j);
+			}
 		#endif
 		i++;
 	}
+	
 	*command_count = cmdc;
 	clean_cmds();
 	yylex_destroy();
@@ -113,16 +110,13 @@ struct command* get_coms(char* line, int* command_count) {
 }
 
 int add_arg(char* text) {
-	struct arg* new_arg = malloc(sizeof(struct arg));
+	struct arg* new_arg;
 	char* value;
+	
+	MALLOC(new_arg, (sizeof(struct arg)));
 
 	if(text != NULL){
-		value = malloc(strlen(text) + 1);
-
-		if (new_arg == NULL || value == NULL) {
-			printf("%s\n", "Error during malloc for arg!");
-			exit(1);
-		}
+		MALLOC(value, (strlen(text) + 1));
 		strcpy(value, text);
 		new_arg->value = value;
 	}
@@ -138,17 +132,14 @@ int add_arg(char* text) {
 }
 
 int add_cmd() {
-	struct cmd* new_cmd = malloc(sizeof(struct cmd));
-	char** cmd_args = malloc(sizeof(char*) * argc);
+	struct cmd* new_cmd;
+	char** cmd_args;
 	struct arg* iterate;
+	
+	MALLOC(new_cmd, (sizeof(struct cmd)));
+	MALLOC(cmd_args, (sizeof(char *) * argc));
 
 	int i = 0;
-
-	if (new_cmd == NULL || cmd_args == NULL) {
-		printf("%s\n", "Error during malloc for cmd!");
-		exit(1);
-	}
-	
 	TAILQ_FOREACH(iterate, &args, nexta) {
 		*(cmd_args + i) = iterate->value;
 		i++;
@@ -164,13 +155,13 @@ int add_cmd() {
 	clean_args();
 
 	#ifdef TEST
-	struct cmd* test;
-	TAILQ_FOREACH(test, &cmds, nextc) {
-		for (int i = 0; i < test->argc; i++) {
-			printf("%s at: %p \n", *(test->binary+i), test->binary+i);
+		struct cmd* test;
+		TAILQ_FOREACH(test, &cmds, nextc) {
+			for (int i = 0; i < test->argc; i++) {
+				printf("%s at: %p \n", *(test->binary+i), test->binary+i);
+			}
+			printf("arg count: %d\n", test->argc);
 		}
-		printf("arg count: %d\n", test->argc);
-	}
 	#endif
 
 	return 0;
@@ -182,8 +173,7 @@ int clean_args() {
 	while(!TAILQ_EMPTY(&args)) {
 		argument = TAILQ_FIRST(&args);
 		TAILQ_REMOVE(&args, argument, nexta);
-		free(argument);
-		argument = NULL;
+		FREE(argument);
 	}
 	argc = 0;
 
@@ -196,8 +186,7 @@ int clean_cmds() {
 	while(!TAILQ_EMPTY(&cmds)) {
 		command = TAILQ_FIRST(&cmds);
 		TAILQ_REMOVE(&cmds, command, nextc);
-		free(command);
-		command = NULL;
+		FREE(command);
 	}
 	cmdc = 0;
 

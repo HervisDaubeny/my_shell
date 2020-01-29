@@ -5,6 +5,7 @@
 #include <stdio.h>
 
 #include "ch_dir.h"
+#include "utils.h"
 
 int cd(char** path, int argc, char* lastd) {
 	int rval = 0;
@@ -30,6 +31,7 @@ int cd(char** path, int argc, char* lastd) {
 	}
 	else if(strcmp(*(path + 1), "-") == 0) {
 		rval = change_dir(lastd);
+		printf("%s\n", lastd);
 	}
 	else {
 		rval = change_dir(*(path + 1));
@@ -41,12 +43,14 @@ int cd(char** path, int argc, char* lastd) {
 int change_dir(char* target) {
 	if((chdir(target)) < 0) {
 		if(errno == 2) {
-			char* buff = malloc(254);
-			char* mess = "Shelly: cd: no such file or directory:";
+			char* buff;
+			char* mess;
+			MALLOC(buff, 254);
+			mess = "Shelly: cd: no such file or directory:";
 			sprintf(buff, "%s %s\n", mess, target);
 			write(STDERR_FILENO, buff, strlen(buff));
 
-			free(buff);
+			FREE(buff);
 		}
 		else {
 			printf("unknown errno: %d\n", errno);
@@ -64,9 +68,10 @@ int main() {
 	char* cmda[] = {"cd", "~", NULL};
 	int cmdc = 3;
 	int ret = 0;
-	char* lwd = malloc(128);
-	char* tmp = malloc(128);
-	char* cwd = malloc(128);
+	char* lwd, tmp, cwd;
+	MALLOC(lwd, 128);
+	MALLOC(tmp, 128);
+	MALLOC(cwd, 128);
 	getcwd(cwd, (size_t)128);
 	strcpy(lwd, cwd);
 	
@@ -136,9 +141,9 @@ int main() {
 		printf("%d prompt>\n", ret);
 	}
 
-	free(cwd);
-	free(tmp);
-	free(lwd);
+	FREE(cwd);
+	FREE(tmp);
+	FREE(lwd);
 
 	return 0;
 }

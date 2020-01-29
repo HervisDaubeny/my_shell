@@ -1,3 +1,4 @@
+#define _XOPEN_SOURCE 700
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -27,31 +28,33 @@ int main(int argc, char* const* argv) {
 	while((opt = getopt(argc, argv, ":c:")) != -1) {
 		char* buff;
 		char* mess;
+		
 		switch(opt){
 			case 'c':
 				execute_line(optarg);
 				return rval;
 			case ':':
-				buff = malloc(128);
+				MALLOC(buff, 128);
 				mess = "Shelly: option requires argument\
 					      :";
 				sprintf(buff, "%s %c\n", mess, optopt);
 				write(STDERR_FILENO, buff, strlen(buff));
 
-				free(buff);
+				FREE(buff);
 				return 2;
 			case '?':
-				buff = malloc(128);
+				MALLOC(buff, 128);
 				mess = "Shelly: invalid option:";
 				sprintf(buff, "%s %c\n", mess, optopt);
 				write(STDERR_FILENO, buff, strlen(buff));
 
-				free(buff);
+				FREE(buff);
 				return 2;
 		}
 	}
-
+	
 	set_env();
+	
 	if(optind < argc) {
 		run_script(argv[1]);
 	}
@@ -70,7 +73,7 @@ void run_script(char* file) {
 		char* line = fd_getl(fd, &eof);
 		execute_line(line);
 
-		free(line);
+		FREE(line);
 		if(eof || rval) {
 			break;
 		}
@@ -83,23 +86,26 @@ void interactive_run() {
 	char* line = NULL;
 	char* prompt;
 
+    struct sigaction signalAction;
+    signalAction.sa_handler = sig_handler;
+    
 	while(1) {
-		signal(SIGINT, sig_handler);
+	
+		sigaction(SIGINT, &signalAction, NULL);
 		prompt = get_prompt();
 		line = readline(prompt);
 		if(line == NULL) {
 			printf("exit\n");
 
-			free(prompt);
+			FREE(prompt);
 			break;
 		}
 
 		add_history(line);
 		execute_line(line);
 
-		free(prompt);
-		free(line);
-		line = NULL;
+		FREE(prompt);
+		FREE(line);
 	}
 }
 
@@ -110,19 +116,22 @@ void execute_line(char* line) {
 	for(int i = 0; i < cmdc; i++) {
 		if((commands + i)->argc == 1) {
 			if(i + 1 < cmdc || *((commands + i)->value) == NULL) {
-				char* buff = malloc(128);
-				char* msg =\
-				"Shelly: syntax error near unexpected token";
-				sprintf(buff, "%s: '%c'\n", msg,\
+				char* buff;
+				char* msg;
+				
+				MALLOC(buff, 128);
+				msg =\
+				"Shelly: syntax error near unexpected token:";
+				
+				sprintf(buff, "%s '%c'\n", msg,\
 				(commands + i)->sep);
 				write(STDERR_FILENO, buff, strlen(buff));
 
-				free(buff);
+				FREE(buff);
 				rval = 2;
 				cc = 0;
 
 				break;
-
 			}
 			else {
 				break;
@@ -158,13 +167,13 @@ void sig_handler(int sig) {
 	rl_redisplay();
 
 	signal(SIGINT, sig_handler);
-	free(prompt);
+	FREE(prompt);
 }
 
 void set_env() {
 	cwd = getcwd(NULL, (size_t)0);
 	if((lwd = getenv("OLDPWD")) == NULL) {
-		lwd = malloc(strlen(cwd));
+		MALLOC(lwd, strlen(cwd));
 		lwd = strcpy(lwd, cwd);
 	}
 }
@@ -172,52 +181,53 @@ void set_env() {
 void free_commands(struct command* commands, int cmdc) {
 	for(int i = 0; i < cmdc; i++) {
 		for(int j = 0; j < (commands + i)->argc; j++) {
-			free(*((commands + i)->value + j));
+			FREE(*((commands + i)->value + j));
 		}
-		free((commands + i)->value);
+		FREE((commands + i)->value);
 	}
 
-	free(commands);
+	FREE(commands);
 }
 
 char* get_prompt() {
 	char* prompt;
 	char* cuwd;
 	cuwd = getcwd(NULL, (size_t)0);
-	prompt = malloc(strlen(cuwd) + 9);
+	MALLOC(prompt, (strlen(cuwd) + 9));
 
 	if(rval > 0) {
 		sprintf(prompt, "%d %s $ ", rval, cuwd);
 	}
 	else {
-
 		sprintf(prompt, "%s $ ", cuwd);
 	}
 
-	free(cuwd);
-
+	FREE(cuwd);
 	return prompt;
 }
 
 int call_cd(struct command* cmd) {
 	int ret = 0;
-	char* tmp = malloc(128);
+	char* tmp;
+	
+	MALLOC(tmp, 128);
 	strcpy(tmp, cwd);
 
 	ret = cd(cmd->value, cmd->argc, lwd);
 	if(rval == 0) {
 		strcpy(lwd, tmp);
 	}
-	free(cwd);
-	free(tmp);
+	FREE(cwd);
+	FREE(tmp);
 
 	cwd = getcwd(NULL, (size_t)0);
+	
 	return ret;
 }
 
 int call_exit(struct command* cmd) {
 	int ret = 0;
 	ret = ext(cmd, rval);
-
+	
 	return ret;
 }

@@ -16,19 +16,22 @@ int ext(struct command* cmd, int lret) {
 	}
 	else if(cmd->argc == 3) {
 		/* check numeric argument */
-		char** endn = malloc(sizeof(char**));
+		char** endn;
+		MALLOC(endn, sizeof(char**));
 		int rval = (int) strtol(*(cmd->value + 1), endn, 10);
 
 		if(**endn == '\0') {
 			exit(rval);
 		}
 		else {
-			char* buff = malloc(128);
-			char* mess = "Shelly: exit: numeric argument required:";
+			char* buff;
+			char* mess;
+			MALLOC(buff, 128);
+			mess = "Shelly: exit: numeric argument required:";
 			sprintf(buff, "%s %s\n", mess, *(cmd->value + 1));
 			write(STDERR_FILENO, buff, strlen(buff));
 
-			free(buff);
+			FREE(buff);
 			exit(2);
 		}
 	}
