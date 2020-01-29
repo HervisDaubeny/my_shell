@@ -1,4 +1,5 @@
-#!/bin/bash CC = gcc
+#!/bin/bash
+CC = gcc
 F = flex
 S = src/
 CFLAGS = -I headers -Wall -Wextra -ggdb3 -g
@@ -38,7 +39,7 @@ lex.yy.c: $(S)get_cmds.c
 	$(F) $<
 
 val: mysh
-	valgrind --tool=memcheck --leak-check=full --num-callers=20 ./mysh
+	valgrind --tool=memcheck --leak-check=full --num-callers=20 ./mysh ~/School/Programing/unix-linux-prog-in-c-labs/final-assignment-tests/shell/test-011.mysh
 	#--show-leak-kinds=all
 	#--track-fds=yes 
 
