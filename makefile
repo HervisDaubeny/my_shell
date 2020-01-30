@@ -35,7 +35,7 @@ lex.yy.o: lex.yy.c 	#replaces get_cmds.o
 fd_readl.o: $(S)fd_readl.c
 	$(CC) $(CFLAGS) -c $<
 
-lex.yy.c: $(S)get_cmds.c
+lex.yy.c: $(S)get_cmds.l
 	$(F) $<
 
 val: mysh
