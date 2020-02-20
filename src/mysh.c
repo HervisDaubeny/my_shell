@@ -4,6 +4,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <signal.h>
+#include <errno.h>
 #include <readline/readline.h>
 #include <readline/history.h>
 
@@ -171,7 +172,18 @@ void sig_handler(int sig) {
 }
 
 void set_env() {
-	cwd = getcwd(NULL, (size_t)0);
+	if((cwd = getcwd(NULL, 0)) == NULL) {
+		char* mess;
+		char* buff;
+		mess = "Shelly: Current working directory couldn't be\
+			retrieved. Errno:";
+		MALLOC(buff, 128);
+		sprintf(buff, "%s %d.\n", mess, errno);
+		write(STDERR_FILENO, buff, strlen(buff));
+
+		FREE(buff);
+		exit(1);
+	}
 	if((lwd = getenv("OLDPWD")) == NULL) {
 		MALLOC(lwd, strlen(cwd));
 		lwd = strcpy(lwd, cwd);

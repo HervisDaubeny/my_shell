@@ -20,10 +20,6 @@ while(0)
 #define RELLOC(ptr, size) do {\
 	void* check = (void*)ptr;\
 	check = realloc(ptr, size);\
-	if(check != (void*)ptr) {\
-		printf("realloc() error, pointers differ %p %p\n", ptr, check);\
-		exit(1);\
-	}\
 	if(check == NULL) {\
 		printf("realloc() error, NULL returned\n");\
 		exit(1);\
