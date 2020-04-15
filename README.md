@@ -11,9 +11,9 @@ Phase 2 is now being implemented.
 
 ## TODO:
 
-- [ ] extend `struct command` of `char*` fields `input` `output`
+- [x] extend `struct command` of `char*` fields `input` `output`
 
-- [ ] make sure `struct command` is alocated and disposed correctly after the change
+- [x] make sure `struct command` is alocated and disposed correctly after the change (in `mysh.c`)
 
 - [ ] reimplement `get_cmds.l` to use updated `struct command` and correctly match I/O redirections
 

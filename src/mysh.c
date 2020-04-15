@@ -29,7 +29,7 @@ int main(int argc, char* const* argv) {
 	while((opt = getopt(argc, argv, ":c:")) != -1) {
 		char* buff;
 		char* mess;
-		
+
 		switch(opt){
 			case 'c':
 				execute_line(optarg);
@@ -53,9 +53,9 @@ int main(int argc, char* const* argv) {
 				return 2;
 		}
 	}
-	
+
 	set_env();
-	
+
 	if(optind < argc) {
 		run_script(argv[1]);
 	}
@@ -89,9 +89,9 @@ void interactive_run() {
 
     struct sigaction signalAction;
     signalAction.sa_handler = sig_handler;
-    
+
 	while(1) {
-	
+
 		sigaction(SIGINT, &signalAction, NULL);
 		prompt = get_prompt();
 		line = readline(prompt);
@@ -112,25 +112,25 @@ void interactive_run() {
 
 void execute_line(char* line) {
 	struct command* commands = get_coms(line, &cmdc);
-	int cc = 1;
+	int cmd_check = 1;
 
 	for(int i = 0; i < cmdc; i++) {
 		if((commands + i)->argc == 1) {
 			if(i + 1 < cmdc || *((commands + i)->value) == NULL) {
 				char* buff;
 				char* msg;
-				
+
 				MALLOC(buff, 128);
 				msg =\
 				"Shelly: syntax error near unexpected token:";
-				
+
 				sprintf(buff, "%s '%c'\n", msg,\
 				(commands + i)->sep);
 				write(STDERR_FILENO, buff, strlen(buff));
 
 				FREE(buff);
 				rval = 2;
-				cc = 0;
+				cmd_check = 0;
 
 				break;
 			}
@@ -140,7 +140,7 @@ void execute_line(char* line) {
 		}
 	}
 
-	if(cc) {
+	if(cmd_check) {
 		for(int i = 0; i < cmdc; i++) {
 			if(strcmp(*((commands + i)->value), "cd") == 0) {
 				rval = call_cd(commands + i);
@@ -196,6 +196,8 @@ void free_commands(struct command* commands, int cmdc) {
 			FREE(*((commands + i)->value + j));
 		}
 		FREE((commands + i)->value);
+		FREE((commands + i)->input);
+		FREE((commands + i)->output);
 	}
 
 	FREE(commands);
@@ -221,7 +223,7 @@ char* get_prompt() {
 int call_cd(struct command* cmd) {
 	int ret = 0;
 	char* tmp;
-	
+
 	MALLOC(tmp, 128);
 	strcpy(tmp, cwd);
 
@@ -233,13 +235,13 @@ int call_cd(struct command* cmd) {
 	FREE(tmp);
 
 	cwd = getcwd(NULL, (size_t)0);
-	
+
 	return ret;
 }
 
 int call_exit(struct command* cmd) {
 	int ret = 0;
 	ret = ext(cmd, rval);
-	
+
 	return ret;
 }
