@@ -16,13 +16,13 @@ int exec_bin(char** binary) {
 	int child_exit = 253;
 	struct sigaction signalAction;
     signalAction.sa_handler = child_killer;
-    
+
     sigaction(SIGINT, &signalAction, NULL);
-    
+
 	pid = fork();
 	if(pid == 0) {
 		// In child process
-	    	if(execvp(binary[0], binary) < 0) {
+	  if(execvp(binary[0], binary) < 0) {
 			if(errno == 2) {
 				char* buff;
 				char* mess;
