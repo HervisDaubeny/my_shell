@@ -1,6 +1,6 @@
 #include <unistd.h>                            
 #include <stdlib.h>
-#include <sys/types.h>                   
+#include <sys/types.h>
 #include <sys/stat.h>
 #include <errno.h>
 #include <fcntl.h>
@@ -14,7 +14,7 @@ int fd_open(char* file) {
 	if (fd == -1) {
 		char* buff;
 		char* mess;
-		
+
 		MALLOC(buff, 128);
 		mess = "Shelly: error while opening file:";
 		sprintf(buff, "%s %d\n", mess, errno);
@@ -32,7 +32,7 @@ int fd_close(int fd) {
 	if (result == -1) {
 		char* buff;
 		char* mess;
-		
+
 		MALLOC(buff, 128);
 		mess = "Shelly: error while closing file:";
 		sprintf(buff, "%s %d\n", mess, errno);
@@ -44,35 +44,6 @@ int fd_close(int fd) {
 
 	return result;
 }
-
-/*
-char fd_getc(int fd) {
-	static int size = 10;
-	static int poss = 0;
-	static int chread = 0;
-	static char buffer[10];
-	char ret = '\0';
-
-	if(poss >= chread) {
-		chread = 0;
-		for(int i = 0; i < size; i++) {
-			buffer[i] = '\0';
-		}
-		chread = (int)read(fd, buffer, size);
-		poss = 0;
-
-		if(chread == 0) {
-
-			return -1;
-		}
-	}
-	
-	ret = buffer[poss];
-	poss++;
-
-	return ret;
-}
-*/
 
 char fd_getc(int fd) {
 	char buffer[1];
@@ -87,10 +58,11 @@ char fd_getc(int fd) {
 
 	return *buffer;
 }
+
 char* fd_getl(int fd, int* eof) {
 	size_t size = 80;
 	int length = 0;
-	char* buffer; 
+	char* buffer;
 	char* line;
 	MALLOC(buffer, size);
 
@@ -122,7 +94,7 @@ char* fd_getl(int fd, int* eof) {
 			return line;
 		}
 	}
-	
+
 }
 #ifdef TEST
 #include <stdio.h>
