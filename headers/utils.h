@@ -38,7 +38,10 @@ while(0)
  */
 
 struct command {
+	/* if fields input, output == null: default I/O is used */
 	char** value;
+	char* input;
+	char* output;
 	char sep;
 	int argc; /* null terminating included */
 };

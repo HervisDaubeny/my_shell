@@ -11,14 +11,14 @@ Phase 2 is now being implemented.
 
 ## TODO:
 
-[ ] extend `struct command` of `char*` fields `input` `output`
+- [ ] extend `struct command` of `char*` fields `input` `output`
 
-[ ] make sure `struct command` is alocated and disposed correctly after the change
+- [ ] make sure `struct command` is alocated and disposed correctly after the change
 
-[ ] reimplement `get_cmds.l` to use updated `struct command` and correctly match I/O redirections
+- [ ] reimplement `get_cmds.l` to use updated `struct command` and correctly match I/O redirections
 
-[ ] reimplement `exec_bin.c` to suport I/O redirections and pipeline creation and execution
+- [ ] reimplement `exec_bin.c` to suport I/O redirections and pipeline creation and execution
 
-[ ] optimize the memmory leaks
+- [ ] optimize the memmory leaks
 
-[ ] pass phase 2 tests
+- [ ] pass phase 2 tests
