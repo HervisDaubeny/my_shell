@@ -28,8 +28,10 @@ while(0)
 while(0)
 
 #define FREE(ptr) do {\
-	free(ptr);\
-	ptr = NULL;\
+	if(ptr != NULL) {\
+		free(ptr);\
+		ptr = NULL;\
+	}\
 }\
 while(0)
 
@@ -44,6 +46,7 @@ struct command {
 	char* output;
 	char sep;
 	int argc; /* null terminating included */
+	int oout;
 };
 
 #endif
