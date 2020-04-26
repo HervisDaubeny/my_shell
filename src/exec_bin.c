@@ -4,15 +4,17 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <sys/types.h>
+#include <sys/stat.h>
 #include <sys/wait.h>
 #include <unistd.h>
+#include <fcntl.h>
 
 #include "exec_bin.h"
 #include "utils.h"
 
 pid_t pid;
 
-int exec_bin(char** binary) {
+int exec_bin(struct command* binary) {
 	int child_exit = 253;
 	struct sigaction signalAction;
     signalAction.sa_handler = child_killer;
@@ -22,13 +24,42 @@ int exec_bin(char** binary) {
 	pid = fork();
 	if(pid == 0) {
 		// In child process
-	  if(execvp(binary[0], binary) < 0) {
+		if(binary->input != NULL) {
+			close(0);
+			int input = open(binary->input, O_RDONLY);
+			if(input > 0) {
+				dup(input);
+			}
+			else {
+				//TODO: handle error while opening file
+			}
+		}
+		if(binary->output != NULL) {
+			close(1);
+			int output;
+
+			if(binary->oout) {
+				output = open(binary->output, O_CREAT | O_TRUNC | O_WRONLY, 00666);
+			}
+			else {
+				output = open(binary->output, O_APPEND | O_WRONLY);
+			}
+
+			if(output > 0) {
+				dup(output);
+			}
+			else {
+				//TODO: handle error while opening file
+			}
+		}
+
+	  if(execvp(*(binary->value), binary->value) < 0) {
 			if(errno == 2) {
 				char* buff;
 				char* mess;
 				MALLOC(buff, 1024);
 				mess = "Shelly: command not found:";
-				sprintf(buff, "%s %s\n", mess, binary[0]);
+				sprintf(buff, "%s %s\n", mess, *(binary->value));
 				write(STDERR_FILENO, buff, strlen(buff));
 				child_exit = 127;
 

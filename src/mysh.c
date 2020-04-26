@@ -149,7 +149,7 @@ void execute_line(char* line) {
 				rval = call_exit(commands + i);
 			}
 			else {
-				rval = exec_bin((commands + i)->value);
+				rval = exec_bin(commands + i);
 			}
 		}
 	}
