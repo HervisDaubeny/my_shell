@@ -15,9 +15,11 @@ Phase 2 is now being implemented.
 
 - [x] make sure `struct command` is alocated and disposed correctly after the change (in `mysh.c`)
 
-- [ ] reimplement `get_cmds.l` to use updated `struct command` and correctly match I/O redirections
+- [x] reimplement `get_cmds.l` to use updated `struct command` and correctly match I/O redirections
 
-- [ ] reimplement `exec_bin.c` to suport I/O redirections and pipeline creation and execution
+- [x] reimplement `exec_bin.c` to suport I/O redirections
+
+- [ ] pipeline creation and execution
 
 - [ ] optimize the memmory leaks
 
