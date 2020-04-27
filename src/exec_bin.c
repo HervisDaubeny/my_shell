@@ -31,7 +31,39 @@ int exec_bin(struct command* binary) {
 				dup(input);
 			}
 			else {
-				//TODO: handle error while opening file
+				if (errno == 2) {
+					char* buff;
+					char* mess;
+					MALLOC(buff, 1024);
+					mess = "Shelly: No such file or directory:";
+					sprintf(buff, "%s %s\n", mess, binary->input);
+					write(STDERR_FILENO, buff, strlen(buff));
+
+					FREE(buff);
+					exit(1);
+				}
+				else if (errno == 13) {
+					char* buff;
+					char* mess;
+					MALLOC(buff, 1024);
+					mess = "Shelly: Premission denied:";
+					sprintf(buff, "%s %s\n", mess, binary->input);
+					write(STDERR_FILENO, buff, strlen(buff));
+
+					FREE(buff);
+					exit(1);
+				}
+				else {
+					char* buff;
+					char* mess;
+					MALLOC(buff, 1024);
+					mess = "Shelly: Unexpected error. Errno:";
+					sprintf(buff, "%s %d\n", mess, errno);
+					write(STDERR_FILENO, buff, strlen(buff));
+
+					FREE(buff);
+					exit(1);
+				}
 			}
 		}
 		if(binary->output != NULL) {
@@ -42,14 +74,35 @@ int exec_bin(struct command* binary) {
 				output = open(binary->output, O_CREAT | O_TRUNC | O_WRONLY, 00666);
 			}
 			else {
-				output = open(binary->output, O_APPEND | O_WRONLY);
+				output = open(binary->output, O_APPEND | O_CREAT | O_WRONLY, 00666);
 			}
 
 			if(output > 0) {
 				dup(output);
 			}
 			else {
-				//TODO: handle error while opening file
+				if (errno == 13) {
+					char* buff;
+					char* mess;
+					MALLOC(buff, 1024);
+					mess = "Shelly: Premission denied:";
+					sprintf(buff, "%s %s\n", mess, binary->output);
+					write(STDERR_FILENO, buff, strlen(buff));
+
+					FREE(buff);
+					exit(1);
+				}
+				else {
+					char* buff;
+					char* mess;
+					MALLOC(buff, 1024);
+					mess = "Shelly: Unexpected error. Errno:";
+					sprintf(buff, "%s %d\n", mess, errno);
+					write(STDERR_FILENO, buff, strlen(buff));
+
+					FREE(buff);
+					exit(1);
+				}
 			}
 		}
 
