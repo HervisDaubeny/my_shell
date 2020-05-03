@@ -87,12 +87,13 @@ void interactive_run() {
 	char* line = NULL;
 	char* prompt;
 
-    struct sigaction signalAction;
-    signalAction.sa_handler = sig_handler;
+	struct sigaction newAction = {0};
+	newAction.sa_handler = int_handler;
+	if(sigaction(SIGINT, &newAction, NULL)) {
+		printf("%s %d\n", "sigaction failed errno:", errno);
+	}
 
 	while(1) {
-
-		sigaction(SIGINT, &signalAction, NULL);
 		prompt = get_prompt();
 		line = readline(prompt);
 		if(line == NULL) {
@@ -138,10 +139,55 @@ void execute_line(char* line) {
 				break;
 			}
 		}
+
+		char* left = {"<"};
+		char* right = {">"};
+		for(int j = 0; j < ((commands + i)->argc) - 1; j++) {
+			char* contains = strstr(*((commands + i)->value + j), left);
+			if(contains) {
+				char* mess;
+				mess = "Shelly: syntax error near unexpected token:";
+
+				PRINT_ERR(mess, *((commands + i)->value + j), STRING);
+				rval = 2;
+				cmd_check = 0;
+
+				break;
+			}
+
+			contains = strstr(*((commands + i)->value + j), right);
+			if(contains) {
+				char* mess;
+				mess = "Shelly: syntax error near unexpected token:";
+
+				PRINT_ERR(mess, *((commands + i)->value + j), STRING);
+				rval = 2;
+				cmd_check = 0;
+
+				break;
+			}
+		}
 	}
 
 	if(cmd_check) {
+		int pipe = 0;
+
 		for(int i = 0; i < cmdc; i++) {
+			/* take care of pipeline execution and skip what was executed */
+			if((commands+i)->sep == '|') {
+				if (pipe) { // already executed -> skip
+					continue;
+				}
+				pipe = 1; // execute pipeline
+				rval = exec_pipe(commands + i, cmdc);
+				continue;
+			}
+			else if(pipe) { // last command that got pipelined input -> skip
+				pipe = 0;
+				continue;
+			}
+
+			/* take care of "notpiped" command execution */
 			if(strcmp(*((commands + i)->value), "cd") == 0) {
 				rval = call_cd(commands + i);
 			}
@@ -157,9 +203,9 @@ void execute_line(char* line) {
 	free_commands(commands, cmdc);
 }
 
-void sig_handler(int sig) {
+void int_handler(int signum) {
 	printf("\n");
-	rval = 128 + sig;
+	rval = 128 + signum;
 	char* prompt = get_prompt();
 
 	rl_set_prompt(prompt);
@@ -167,10 +213,8 @@ void sig_handler(int sig) {
 	rl_replace_line("", 0);
 	rl_redisplay();
 
-	signal(SIGINT, sig_handler);
 	FREE(prompt);
 }
-
 void set_env() {
 	if((cwd = getcwd(NULL, 0)) == NULL) {
 		char* mess;
