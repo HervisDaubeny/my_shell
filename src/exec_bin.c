@@ -8,6 +8,7 @@
 #include <sys/wait.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include <signal.h>
 
 #include "exec_bin.h"
 #include "utils.h"
@@ -15,144 +16,259 @@
 pid_t pid;
 
 int exec_bin(struct command* binary) {
-	int child_exit = 253;
-	struct sigaction signalAction;
-    signalAction.sa_handler = child_killer;
-
-    sigaction(SIGINT, &signalAction, NULL);
+	int child_exited = -1;
 
 	pid = fork();
 	if(pid == 0) {
-		// In child process
-		if(binary->input != NULL) {
-			close(0);
-			int input = open(binary->input, O_RDONLY);
-			if(input > 0) {
-				dup(input);
-			}
-			else {
-				if (errno == 2) {
-					char* buff;
-					char* mess;
-					MALLOC(buff, 1024);
-					mess = "Shelly: No such file or directory:";
-					sprintf(buff, "%s %s\n", mess, binary->input);
-					write(STDERR_FILENO, buff, strlen(buff));
+		/* In child process */
 
-					FREE(buff);
-					exit(1);
-				}
-				else if (errno == 13) {
-					char* buff;
-					char* mess;
-					MALLOC(buff, 1024);
-					mess = "Shelly: Premission denied:";
-					sprintf(buff, "%s %s\n", mess, binary->input);
-					write(STDERR_FILENO, buff, strlen(buff));
-
-					FREE(buff);
-					exit(1);
-				}
-				else {
-					char* buff;
-					char* mess;
-					MALLOC(buff, 1024);
-					mess = "Shelly: Unexpected error. Errno:";
-					sprintf(buff, "%s %d\n", mess, errno);
-					write(STDERR_FILENO, buff, strlen(buff));
-
-					FREE(buff);
-					exit(1);
-				}
-			}
-		}
-		if(binary->output != NULL) {
-			close(1);
-			int output;
-
-			if(binary->oout) {
-				output = open(binary->output, O_CREAT | O_TRUNC | O_WRONLY, 00666);
-			}
-			else {
-				output = open(binary->output, O_APPEND | O_CREAT | O_WRONLY, 00666);
-			}
-
-			if(output > 0) {
-				dup(output);
-			}
-			else {
-				if (errno == 13) {
-					char* buff;
-					char* mess;
-					MALLOC(buff, 1024);
-					mess = "Shelly: Premission denied:";
-					sprintf(buff, "%s %s\n", mess, binary->output);
-					write(STDERR_FILENO, buff, strlen(buff));
-
-					FREE(buff);
-					exit(1);
-				}
-				else {
-					char* buff;
-					char* mess;
-					MALLOC(buff, 1024);
-					mess = "Shelly: Unexpected error. Errno:";
-					sprintf(buff, "%s %d\n", mess, errno);
-					write(STDERR_FILENO, buff, strlen(buff));
-
-					FREE(buff);
-					exit(1);
-				}
-			}
+		// Handle signals
+		struct sigaction signalAction = {0};
+	  signalAction.sa_handler = child_killer;
+	  if(sigaction(SIGINT, &signalAction, NULL)) {
+			printf("%s %d\n", "assigning signal hadler to child failed:", errno);
 		}
 
-	  if(execvp(*(binary->value), binary->value) < 0) {
-			if(errno == 2) {
-				char* buff;
-				char* mess;
-				MALLOC(buff, 1024);
-				mess = "Shelly: command not found:";
-				sprintf(buff, "%s %s\n", mess, *(binary->value));
-				write(STDERR_FILENO, buff, strlen(buff));
-				child_exit = 127;
-
-				FREE(buff);
-			}
-			else {
-				printf("Couldn't execute, errno: %d\n", errno);
-			}
-		}
-
-		//If 253 is returned I'm getting a different errno.
-		exit(child_exit);
+		// Handle process execution
+		redirect(binary->input, binary->output, binary->oout);
+		execute_child(binary);
 	}
 	else if(pid == -1) {
-		/*
-		 * Something bad happend while forking. It really shouldn't re-
-		 * turn 254 specifically to know it was this.
-		 */
-		return 254;
+		/* fork() failed */
+		char* mess;
+		mess = "Shelly: unable to fork, errno:";
+
+		PRINT_ERR(mess, &errno, INT);
+		exit(1);
 	}
 	else {
-		// In parrent process
+		/* In parrent process */
 		int wstatus = 0;
 
 		wait(&wstatus);
-
 		if(WIFEXITED(wstatus)) {
-			child_exit = WEXITSTATUS(wstatus);
+			child_exited = WEXITSTATUS(wstatus);
 		}
 		if(WIFSIGNALED(wstatus)) {
-			child_exit = 128 + WTERMSIG(wstatus);
+			child_exited = 128 + WTERMSIG(wstatus);
 		}
 	}
 
-	return child_exit;
+	return child_exited;
+}
+
+int exec_pipe(struct command* commands, int cmdc) {
+	int NO_ITEMS = cmdc;
+	int pipe_length = 1; // 1 for last item of pipe without sep == '|'
+
+	// get pipe length
+	for(int i = 0; i < NO_ITEMS; i++) {
+	 if(((commands + i)->sep) == '|') {
+		 pipe_length++;
+	 }
+	 else {
+		 break;
+	 }
+	}
+
+	// create array to store pid of all childern
+	pid_t childern[pipe_length];
+	for(int i = 0; i < pipe_length; i++) {
+	 childern[i] = 0;
+	}
+
+	// create two pipes
+	int r_pipe[2];
+	int w_pipe[2];
+	pipe(r_pipe);
+	pipe(w_pipe);
+
+	// execute pipeline
+	for(int index = 0; index < pipe_length; index++) {
+		pid_t pid = fork();
+
+		if(pid == 0) {
+			/* in child */
+			if(index == 0) {
+				close(1);
+				dup(w_pipe[1]);
+			}
+			else if(index ==  pipe_length - 1) {
+				close(0);
+				dup(r_pipe[0]);
+			}
+			else {
+				close(0);
+				dup(r_pipe[0]);
+				close(1);
+				dup(w_pipe[1]);
+			}
+
+			close(r_pipe[0]);
+			close(r_pipe[1]);
+			close(w_pipe[0]);
+			close(w_pipe[1]);
+
+			redirect((commands + index)->input, (commands + index)->output, (commands + index)-> oout);
+			execute_child(commands + index);
+
+			/* this code runs only if execute_child() failed -> stop the cycle */
+			break;
+		}
+		else if (pid == -1) {
+			/* fork() failed */
+			char* mess;
+			mess = "Shelly: unable to fork, errno:";
+
+			PRINT_ERR(mess, &errno, INT);
+			exit(1);
+		}
+		else {
+			childern[index] = pid;
+
+			close(r_pipe[0]);
+			close(r_pipe[1]);
+			r_pipe[0] = w_pipe[0];
+			r_pipe[1] = w_pipe[1];
+
+			if(index < pipe_length - 1) {
+				pipe(w_pipe);
+			}
+			else {
+				close(w_pipe[0]);
+				close(w_pipe[1]);
+			}
+		}
+	}
+	int wstatus = 0;
+	int child_exited = -1;
+
+	for(int i = 0; i < pipe_length; i++) {
+		waitpid(childern[i], &wstatus, 0);
+		if(WIFEXITED(wstatus)) {
+			child_exited = WEXITSTATUS(wstatus);
+		}
+		if(WIFSIGNALED(wstatus)) {
+			child_exited = 128 + WTERMSIG(wstatus);
+		}
+		if(child_exited) {
+			kill_childern(childern, sizeof(childern));
+			break;
+		}
+	}
+
+ return child_exited;
+}
+
+void execute_child(struct command* command) {
+/* this method can only be called from child process! -> it's fine to exit() */
+	int ret = 0;
+
+	ret = execvp(*(command->value), command->value);
+
+	/* this code runs only if exec() failed */
+	if(ret) {
+		if(errno == 2) {
+			char* mess;
+			mess = "Shelly: command not found:";
+
+			PRINT_ERR(mess, *(command->value), STRING);
+			exit(127);
+		}
+		else {
+			char* mess;
+			mess = "Shelly: couldn't execute, errno:";
+
+			PRINT_ERR(mess, &errno, INT);
+			exit(1);
+		}
+	}
+}
+
+void redirect(char* input, char* output, int override) {
+	/* check input redirection */
+	if(input != NULL) {
+		close(0);
+		int input_fd = open(input, O_RDONLY);
+		if(input_fd) {
+			dup(input_fd);
+		}
+		else {
+			/* expected error */
+			if (errno == 2) {
+				char* mess;
+				mess = "Shelly: No such file or directory:";
+
+				PRINT_ERR(mess, input, STRING);
+				exit(1);
+			}
+			else if (errno == 13) {
+				char* mess;
+				mess = "Shelly: Premission denied:";
+
+				PRINT_ERR(mess, input, STRING);
+				exit(1);
+			}
+
+			/* unexpected error */
+			if (errno > 0) {
+				char* mess;
+				mess = "Shelly: unexpected error, errno:";
+
+				PRINT_ERR(mess, &errno, INT);
+				exit(1);
+			}
+		}
+	}
+
+	/* check output redirection */
+	if(output != NULL) {
+		close(1);
+		int output_fd;
+
+		if(override) {
+			output_fd = open(output, O_CREAT | O_TRUNC | O_WRONLY, 00666);
+		}
+		else {
+			output_fd = open(output, O_APPEND | O_CREAT | O_WRONLY, 00666);
+		}
+
+		if(output_fd) {
+			dup(output_fd);
+		}
+		else {
+			if (errno == 13) {
+				char* mess;
+				mess = "Shelly: Premission denied:";
+
+				PRINT_ERR(mess, output, STRING);
+				exit(1);
+			}
+
+			if (errno > 0) {
+				char* mess;
+				mess = "Shelly: Unexpected error. Errno:";
+
+				PRINT_ERR(mess, &errno, INT);
+				exit(1);
+			}
+		}
+	}
 }
 
 void child_killer(int sig) {
 	kill(pid, sig);
-	printf("Killed by signal %d.\n", sig);
+}
+
+void kill_childern(pid_t* childern, size_t count) {
+	for(size_t i = 0; i < count; i++) {
+		if(childern[i]) {
+			kill(childern[i], 2);
+		}
+		else {
+			break;
+		}
+	}
 }
 
 #ifdef TEST
