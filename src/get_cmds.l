@@ -77,15 +77,24 @@ TAILQ_HEAD(arghead, arg) args;
 }
 
 \>\> {		/* soft output redirection */
+	if(read_in || read_out) {
+		add_arg(yytext);
+	}
 	over_out = 0;
 	read_out = 1;
 }
 
 \< {			/* input redirection */
+	if(read_in || read_out) {
+		add_arg(yytext);
+	}
 	read_in = 1;
 }
 
 \> {			/* hard output redirection */
+	if(read_in || read_out) {
+		add_arg(yytext);
+	}
 	over_out = 1;
 	read_out = 1;
 }
