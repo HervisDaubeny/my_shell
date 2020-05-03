@@ -3,6 +3,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 /*
  * source: https://gist.github.com/maestrelli/1191287
@@ -38,9 +39,27 @@ while(0)
 /*
  * endsource
  */
+ 
+#define INT 0
+#define STRING 1
+
+#define PRINT_ERR(message, argument, type) do {\
+	char* buffer;\
+	MALLOC(buffer, 1024);\
+	if(type) {\
+		sprintf(buffer, "%s %s\n", message, (char*) argument);\
+	}\
+	else {\
+		sprintf(buffer, "%s %d\n", message, *((int*) argument));\
+	}\
+	write(STDERR_FILENO, buffer, strlen(buffer));\
+	FREE(buffer);\
+}\
+while(0)
 
 struct command {
 	/* if fields input, output == null: default I/O is used */
+	/* if oout == 1 output file is to be overriden, else appended to */
 	char** value;
 	char* input;
 	char* output;
