@@ -89,6 +89,11 @@ int exec_pipe(struct command* commands, int cmdc) {
 
 		if(pid == 0) {
 			/* in child */
+			struct sigaction childHandler = {0};
+			childHandler.sa_handler = child_killer;
+			if(sigaction(SIGINT, &childHandler, NULL)) {
+				printf("%s %d\n", "assigning signal hadler to child failed:", errno);
+			}
 			if(index == 0) {
 				close(1);
 				dup(w_pipe[1]);
@@ -263,7 +268,7 @@ void child_killer(int sig) {
 void kill_childern(pid_t* childern, size_t count) {
 	for(size_t i = 0; i < count; i++) {
 		if(childern[i]) {
-			kill(childern[i], 2);
+			kill(childern[i], SIGINT);
 		}
 		else {
 			break;
