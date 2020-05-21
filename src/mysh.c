@@ -25,6 +25,8 @@ int main(int argc, char* const* argv) {
 	rval = 0;
 	cmdc = 0;
 
+	set_env();
+
 	int opt;
 	while((opt = getopt(argc, argv, ":c:")) != -1) {
 		char* buff;
@@ -53,8 +55,6 @@ int main(int argc, char* const* argv) {
 				return 2;
 		}
 	}
-
-	set_env();
 
 	if(optind < argc) {
 		run_script(argv[1]);
@@ -87,10 +87,10 @@ void interactive_run() {
 	char* line = NULL;
 	char* prompt;
 
-	struct sigaction newAction = {0};
-	newAction.sa_handler = int_handler;
-	if(sigaction(SIGINT, &newAction, NULL)) {
-		printf("%s %d\n", "sigaction failed errno:", errno);
+	struct sigaction promptAction = {0};
+	promptAction.sa_handler = int_handler;
+	if(sigaction(SIGINT, &promptAction, NULL)) {
+		printf("%s %d\n", "sigaction failed, errno:", errno);
 	}
 
 	while(1) {
@@ -103,8 +103,20 @@ void interactive_run() {
 			break;
 		}
 
+		/* block signals for main process druing a command execution */
+		struct sigaction old = {0};
+		promptAction.sa_handler = SIG_IGN;
+		if(sigaction(SIGINT, &promptAction, &old)) {
+			printf("%s %d\n", "blocking signals in parrent failed, errno:", errno);
+		}
+
 		add_history(line);
 		execute_line(line);
+
+		/* allow signals for main process after a command executed */
+		if(sigaction(SIGINT, &old, NULL)) {
+			printf("%s %d\n", "reenabling signals in parrent failed, errno:", errno);
+		}
 
 		FREE(prompt);
 		FREE(line);

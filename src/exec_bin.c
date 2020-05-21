@@ -257,7 +257,7 @@ void redirect(char* input, char* output, int override) {
 }
 
 void child_killer(int sig) {
-	kill(pid, sig);
+	kill(getpid(), sig);
 }
 
 void kill_childern(pid_t* childern, size_t count) {
