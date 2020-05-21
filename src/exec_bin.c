@@ -155,8 +155,6 @@ int exec_pipe(struct command* commands, int cmdc) {
 		}
 		if(WIFSIGNALED(wstatus)) {
 			child_exited = 128 + WTERMSIG(wstatus);
-		}
-		if(child_exited) {
 			kill_childern(childern, sizeof(childern));
 			break;
 		}
