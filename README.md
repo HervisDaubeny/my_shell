@@ -5,9 +5,9 @@ Shell is created as credit for *Unix/Linux Programming in C (NSWI015)* at Facult
 Task requirements:
 https://devnull-cz.github.io/unix-linux-prog-in-c/class-assignments/labs-assignment-2019.txt
 
-## State [unstable]
+## State [stable]
 
-Phase 2 is now being implemented.
+Shell now complies to phase 2 requirements.
 
 ## TODO:
 
@@ -19,8 +19,12 @@ Phase 2 is now being implemented.
 
 - [x] reimplement `exec_bin.c` to suport I/O redirections
 
-- [ ] pipeline creation and execution
+- [x] pipeline creation and execution
 
-- [ ] optimize the memmory leaks
+- [x] optimize the memmory leaks
 
-- [ ] pass phase 2 tests
+- [x] pass phase 2 tests
+
+- [x] replace every print to STDERR with PRINT_ERR macro
+
+- [x] cleanup the code
