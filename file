@@ -1,8 +1,0 @@
-#!/bin/bash
-
-echo A; echo B
-
-date
-l
-
-ls -l -a;
