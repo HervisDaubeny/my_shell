@@ -42,18 +42,12 @@ TAILQ_HEAD(arghead, arg) args;
 
 %%
 ; {      /* split */
-	#ifdef TEST
-	printf("%s %s\n",yytext, "semicol");
-	#endif
 	sep = ';';
 	add_arg(NULL); /* to secure NULL termination */
 	add_cmd();
 }
 
 \n {	/* end of line */
-	#ifdef TEST
-	printf("%s %s\n",yytext, "eol");
-	#endif
 	if (argc > 0) {
 		sep = '\n';
 		add_arg(NULL); /* to secure NULL termination */
@@ -62,19 +56,12 @@ TAILQ_HEAD(arghead, arg) args;
 }
 
 \| {			/* pipe */
-	#ifdef TEST
-	printf("%s %s\n", yytext, "pipe");
-	#endif
 	sep = '|';
 	add_arg(NULL); /* to secure NULL termination */
 	add_cmd();
 }
 
-#.* {     /* comment -> ignore to the $ */
-	#ifdef TEST
-	printf("%s %s\n",yytext, "comment");
-	#endif
-}
+#.* {}     /* comment -> ignore to the $ */
 
 \>\> {		/* soft output redirection */
 	if(read_in || read_out) {
@@ -100,9 +87,6 @@ TAILQ_HEAD(arghead, arg) args;
 }
 
 [^\ \t\n\r;<\|>]+ {			/* good word */
-	#ifdef TEST
-	printf("%s %s\n",yytext, "good word");
-	#endif
 	if(read_in) {
 		save_input(yytext);
 		read_in = 0;
@@ -116,11 +100,7 @@ TAILQ_HEAD(arghead, arg) args;
 	}
 }
 
-. {      /* bad char */
-	#ifdef TEST
-	printf("'%s' %s\n",yytext, "bad word");
-	#endif
-}
+. {}      /* bad char */
 %%
 
 struct command* get_coms(char* line, int* command_count) {
@@ -146,12 +126,6 @@ struct command* get_coms(char* line, int* command_count) {
 		(result + i)->input = iterate->input;
 		(result + i)->output = iterate->output;
 		(result + i)->oout = iterate->over_out;
-		#ifdef TEST
-			printf("result value at: %p\n", (result + i)->value);
-			for (int j = 0; j < (result + i)->argc; j++) {
-				printf("%s at %p\n", *((result + i)->value + j), (result + i)->value + j);
-			}
-		#endif
 		i++;
 	}
 
@@ -228,16 +202,6 @@ int add_cmd() {
 
 	clean_args();
 
-	#ifdef TEST
-		struct cmd* test;
-		TAILQ_FOREACH(test, &cmds, nextc) {
-			for (int i = 0; i < test->argc; i++) {
-				printf("%s at: %p \n", *(test->binary+i), test->binary+i);
-			}
-			printf("arg count: %d\n", test->argc);
-		}
-	#endif
-
 	return 0;
 }
 
@@ -276,26 +240,3 @@ int clean_cmds() {
 
 	return 0;
 }
-
-#ifdef TEST
-int main() {
-	char* err = "";
-	int a = 0;
-	struct command* result = get_coms("ls -l -a; echo 'A'\n", &a);
-
-	if (argc > 0) {
-		err = " - ended in the middle of parsing!";
-	}
-	printf("argc: %d%s cmdc: %d\n", argc, err, cmdc);
-	printf("parsed commands are:\n");
-
-	for (int i = 0; i < cmdc; i++) {
-		int arg_c = (result + i)->argc;
-		for (int j = 0; j < arg_c; j++) {
-			printf("%s ", *((result + i)->value + j));
-		}
-		printf("\n");
-	}
-	return 0;
-}
-#endif

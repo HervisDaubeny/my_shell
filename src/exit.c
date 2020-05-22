@@ -9,9 +9,10 @@
 int ext(struct command* cmd, int lret) {
 	/* check argc */
 	if(cmd->argc > 3) {
-		char* mess = "Shelly: exit: too many arguments\n";
-		write(STDERR_FILENO, mess, strlen(mess));
+		char* mess;
+		mess = "Shelly: exit: too many arguments";
 
+		PRINT_ERR(mess, "", STRING);
 		return 1;
 	}
 	else if(cmd->argc == 3) {
@@ -24,14 +25,10 @@ int ext(struct command* cmd, int lret) {
 			exit(rval);
 		}
 		else {
-			char* buff;
 			char* mess;
-			MALLOC(buff, 128);
 			mess = "Shelly: exit: numeric argument required:";
-			sprintf(buff, "%s %s\n", mess, *(cmd->value + 1));
-			write(STDERR_FILENO, buff, strlen(buff));
 
-			FREE(buff);
+			PRINT_ERR(mess, *(cmd->value + 1), STRING);
 			exit(2);
 		}
 	}

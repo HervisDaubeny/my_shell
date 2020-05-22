@@ -29,29 +29,21 @@ int main(int argc, char* const* argv) {
 
 	int opt;
 	while((opt = getopt(argc, argv, ":c:")) != -1) {
-		char* buff;
 		char* mess;
 
-		switch(opt){
+		switch(opt) {
 			case 'c':
 				execute_line(optarg);
 				return rval;
 			case ':':
-				MALLOC(buff, 128);
-				mess = "Shelly: option requires argument\
-					      :";
-				sprintf(buff, "%s %c\n", mess, optopt);
-				write(STDERR_FILENO, buff, strlen(buff));
+				mess = "Shelly: option requires argument: -";
 
-				FREE(buff);
+				PRINT_ERR(mess, &optopt, STRING);
 				return 2;
 			case '?':
-				MALLOC(buff, 128);
-				mess = "Shelly: invalid option:";
-				sprintf(buff, "%s %c\n", mess, optopt);
-				write(STDERR_FILENO, buff, strlen(buff));
+				mess = "Shelly: invalid option: -";
 
-				FREE(buff);
+				PRINT_ERR(mess, &optopt, STRING);
 				return 2;
 		}
 	}
@@ -90,7 +82,10 @@ void interactive_run() {
 	struct sigaction promptAction = {0};
 	promptAction.sa_handler = int_handler;
 	if(sigaction(SIGINT, &promptAction, NULL)) {
-		printf("%s %d\n", "sigaction failed, errno:", errno);
+		char* mess;
+		mess = "Assigning sig handler to main process failed, errno:";
+
+		PRINT_ERR(mess, &errno, INT);
 	}
 
 	while(1) {
@@ -107,7 +102,10 @@ void interactive_run() {
 		struct sigaction old = {0};
 		promptAction.sa_handler = SIG_IGN;
 		if(sigaction(SIGINT, &promptAction, &old)) {
-			printf("%s %d\n", "blocking signals in parrent failed, errno:", errno);
+		char* mess;
+		mess = "Blocking signals in main process failed, errno:";
+
+		PRINT_ERR(mess, &errno, INT);
 		}
 
 		add_history(line);
@@ -115,7 +113,10 @@ void interactive_run() {
 
 		/* allow signals for main process after a command executed */
 		if(sigaction(SIGINT, &old, NULL)) {
-			printf("%s %d\n", "reenabling signals in parrent failed, errno:", errno);
+			char* mess;
+			mess = "Reenabling signals in main process failed, errno:";
+
+			PRINT_ERR(mess, &errno, INT);
 		}
 
 		FREE(prompt);
@@ -130,18 +131,11 @@ void execute_line(char* line) {
 	for(int i = 0; i < cmdc; i++) {
 		if((commands + i)->argc == 1) {
 			if(i + 1 < cmdc || *((commands + i)->value) == NULL) {
-				char* buff;
-				char* msg;
+				char* mess;
+				mess = "Shelly: syntax error near unexpected token:";
 
-				MALLOC(buff, 128);
-				msg =\
-				"Shelly: syntax error near unexpected token:";
+				PRINT_ERR(mess, &(commands + i)->sep, STRING);
 
-				sprintf(buff, "%s '%c'\n", msg,\
-				(commands + i)->sep);
-				write(STDERR_FILENO, buff, strlen(buff));
-
-				FREE(buff);
 				rval = 2;
 				cmd_check = 0;
 
@@ -230,14 +224,9 @@ void int_handler(int signum) {
 void set_env() {
 	if((cwd = getcwd(NULL, 0)) == NULL) {
 		char* mess;
-		char* buff;
-		mess = "Shelly: Current working directory couldn't be\
-			retrieved. Errno:";
-		MALLOC(buff, 128);
-		sprintf(buff, "%s %d.\n", mess, errno);
-		write(STDERR_FILENO, buff, strlen(buff));
+		mess = "Shelly: Current working directory couldn't be	retrieved, errno:";
 
-		FREE(buff);
+		PRINT_ERR(mess, &errno, INT);
 		exit(1);
 	}
 	if((lwd = getenv("OLDPWD")) == NULL) {

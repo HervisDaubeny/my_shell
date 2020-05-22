@@ -26,7 +26,10 @@ int exec_bin(struct command* binary) {
 		struct sigaction signalAction = {0};
 	  signalAction.sa_handler = child_killer;
 	  if(sigaction(SIGINT, &signalAction, NULL)) {
-			printf("%s %d\n", "assigning signal hadler to child failed:", errno);
+			char* mess;
+			mess = "assigning signal handler to child process failed, errno:";
+
+			PRINT_ERR(mess, &errno, INT);
 		}
 
 		// Handle process execution
@@ -92,7 +95,10 @@ int exec_pipe(struct command* commands, int cmdc) {
 			struct sigaction childHandler = {0};
 			childHandler.sa_handler = child_killer;
 			if(sigaction(SIGINT, &childHandler, NULL)) {
-				printf("%s %d\n", "assigning signal hadler to child failed:", errno);
+				char* mess;
+				mess = "assigning signal handler to child process failed, errno:";
+
+				PRINT_ERR(mess, &errno, INT);
 			}
 			if(index == 0) {
 				close(1);
@@ -273,15 +279,3 @@ void kill_childern(pid_t* childern, size_t count) {
 		}
 	}
 }
-
-#ifdef TEST
-int main() {
-	 char* binary[] = {"ls", "-l", "\0"};
-	 int res = 0;
-
-	 res = exec_bin(binary);
-	 printf("%d user@device /current/directory %s ...\n", (int)res, "%");
-
-	 return res;
-}
-#endif

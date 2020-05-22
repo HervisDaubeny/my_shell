@@ -1,4 +1,4 @@
-#include <unistd.h>                            
+#include <unistd.h>
 #include <stdlib.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -12,15 +12,10 @@
 int fd_open(char* file) {
 	int fd = open(file, O_RDONLY);
 	if (fd == -1) {
-		char* buff;
 		char* mess;
-
-		MALLOC(buff, 128);
 		mess = "Shelly: error while opening file:";
-		sprintf(buff, "%s %d\n", mess, errno);
-		write(STDERR_FILENO, buff, strlen(buff));
 
-		FREE(buff);
+		PRINT_ERR(mess, &errno, INT);
 		exit(1);
 	}
 
@@ -30,15 +25,10 @@ int fd_open(char* file) {
 int fd_close(int fd) {
 	int result = close(fd);
 	if (result == -1) {
-		char* buff;
 		char* mess;
-
-		MALLOC(buff, 128);
 		mess = "Shelly: error while closing file:";
-		sprintf(buff, "%s %d\n", mess, errno);
-		write(STDERR_FILENO, buff, strlen(buff));
 
-		FREE(buff);
+		PRINT_ERR(mess, &errno, INT);
 		exit(1);
 	}
 
@@ -94,31 +84,4 @@ char* fd_getl(int fd, int* eof) {
 			return line;
 		}
 	}
-
 }
-#ifdef TEST
-#include <stdio.h>
-
-int main(int argc, char* argv[]) {
-	int ret;
-	int eof = 0;
-
-	if(argc < 2) {
-		return 1;
-	}
-	int fd = fd_open(argv[1]);
-
-	while(1) {
-		char* line = fd_getl(fd, &eof);
-		printf("%s", line);
-		FREE(line);
-		if(eof) {
-			break;
-		}
-	}
-
-	ret = fd_close(fd);
-
-	return ret;
-}
-#endif

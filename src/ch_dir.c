@@ -11,9 +11,10 @@ int cd(char** path, int argc, char* lastd) {
 	int rval = 0;
 
 	if(argc > 3) {
-		char* mess = "Shelly: cd: too many arguments\n";
-		write(STDERR_FILENO, mess, strlen(mess));
+		char* mess;
+		mess = "Shelly: cd: too many arguments\n";
 
+		PRINT_ERR(mess, "", STRING);
 		return 1;
 	}
 	else if(argc == 2) {
@@ -22,7 +23,10 @@ int cd(char** path, int argc, char* lastd) {
 		return rval;
 	}
 	else if(argc < 2) {
-		printf("cd was given a not NULL terminated array!\n");
+		char* mess;
+		mess = "cd was given a not NULL terminated array!";
+
+		PRINT_ERR(mess, "", STRING);
 		exit(1);
 	}
 
@@ -43,17 +47,16 @@ int cd(char** path, int argc, char* lastd) {
 int change_dir(char* target) {
 	if((chdir(target)) < 0) {
 		if(errno == 2) {
-			char* buff;
 			char* mess;
-			MALLOC(buff, 254);
 			mess = "Shelly: cd: no such file or directory:";
-			sprintf(buff, "%s %s\n", mess, target);
-			write(STDERR_FILENO, buff, strlen(buff));
 
-			FREE(buff);
+			PRINT_ERR(mess, target, STRING);
 		}
 		else {
-			printf("unknown errno: %d\n", errno);
+			char* mess;
+			mess = "unknown errno:";
+
+			PRINT_ERR(mess, &errno, INT);
 			exit(1);
 		}
 
@@ -62,89 +65,3 @@ int change_dir(char* target) {
 
 	return 0;
 }
-
-#ifdef TEST
-int main() {
-	char* cmda[] = {"cd", "~", NULL};
-	int cmdc = 3;
-	int ret = 0;
-	char* lwd, tmp, cwd;
-	MALLOC(lwd, 128);
-	MALLOC(tmp, 128);
-	MALLOC(cwd, 128);
-	getcwd(cwd, (size_t)128);
-	strcpy(lwd, cwd);
-	
-	/* backup cwd */
-	strcpy(tmp, cwd);
-
-	/* change dir ~ */
-	printf("prompt > cd ~\n");
-	if(cd(cmda, cmdc, lwd) == 0) {
-		strcpy(lwd, tmp);
-		getcwd(cwd, (size_t)128);
-		printf("cwd: %s\n", cwd);
-		printf("lwd: %s\n", lwd);
-	}
-
-	/* change dir back */
-	printf("prompt > cd .\n");
-	cmda[1] = ".";
-	strcpy(tmp, cwd);
-	if(cd(cmda, cmdc, lwd) == 0) {
-		strcpy(lwd, tmp);
-		getcwd(cwd, (size_t)128);
-		printf("cwd: %s\n", cwd);
-		printf("lwd: %s\n", lwd);
-	}
-	
-	/* change dir via empty cd */
-	printf("prompt > cd ..\n");
-	cmda[1] = "..";
-	strcpy(tmp, cwd);
-	if(cd(cmda, cmdc, lwd) == 0) {
-		strcpy(lwd, tmp);
-		getcwd(cwd, (size_t)128);
-		printf("cwd: %s\n", cwd);
-		printf("lwd: %s\n", lwd);
-	}
-
-	/* change dir to nonexistent dir */
-	printf("prompt > cd l\n");
-	cmda[1] = "l";
-	strcpy(tmp, cwd);
-	ret = cd(cmda, cmdc, lwd);
-	if((ret) == 0) {
-		strcpy(lwd, tmp);
-		getcwd(cwd, (size_t)128);
-		printf("cwd: %s\n", cwd);
-		printf("lwd: %s\n", lwd);
-		printf("prompt >\n");
-	}
-	else {
-		printf("%d prompt>\n", ret);
-	}
-
-	/* change dir with too many args */
-	printf("prompt > cd l p\n");
-	char* cmdb[] = {"cd", "l", "p", NULL};
-	strcpy(tmp, cwd);
-	ret = cd(cmdb, cmdc+1, lwd);
-	if((ret) == 0) {
-		strcpy(lwd, tmp);
-		getcwd(cwd, (size_t)128);
-		printf("cwd: %s\n", cwd);
-		printf("lwd: %s\n", lwd);
-		printf("prompt >\n");
-	}
-	else {
-		printf("%d prompt>\n", ret);
-	}
-
-	FREE(cwd);
-	FREE(tmp);
-	FREE(lwd);
-
-	return 0;
-}
-#endif
