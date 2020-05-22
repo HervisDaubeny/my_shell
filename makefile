@@ -2,7 +2,7 @@
 CC = gcc
 F = flex
 S = src/
-CFLAGS = -I headers -Wall -Wextra -ggdb3 -g
+CFLAGS = -I headers -Wall -Wextra -ggdb3
 TFLAGS = -D TEST
 
 TTARGETS = texec_bin tget_cmd
