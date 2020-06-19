@@ -1,5 +1,6 @@
 #ifndef UTILS_H
 #define UTILS_H
+#define _GNU_SOURCE
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -39,18 +40,21 @@ while(0)
 /*
  * endsource
  */
- 
+
 #define INT 0
 #define STRING 1
 
 #define PRINT_ERR(message, argument, type) do {\
 	char* buffer;\
-	MALLOC(buffer, 1024);\
+	int size = 0;\
 	if(type) {\
-		sprintf(buffer, "%s %s\n", message, (char*) argument);\
+		size = asprintf(&buffer, "%s %s\n", message, (char*) argument);\
 	}\
 	else {\
-		sprintf(buffer, "%s %d\n", message, *((int*) argument));\
+		size = asprintf(&buffer, "%s %d\n", message, *((int*) argument));\
+	}\
+	if(size < 0) {\
+		exit(1);\
 	}\
 	write(STDERR_FILENO, buffer, strlen(buffer));\
 	FREE(buffer);\
