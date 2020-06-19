@@ -1,3 +1,4 @@
+#define _GNU_SOURCE
 #include <unistd.h>
 #include <stdlib.h>
 #include <sys/types.h>
@@ -76,7 +77,7 @@ char* fd_getl(int fd, int* eof) {
 			MALLOC(line, (length + 1));
 
 			for(int i = 0; i < length; i++) {
-				line [i] = buffer[i];
+				line[i] = buffer[i];
 			}
 			line[length] = '\0';
 
