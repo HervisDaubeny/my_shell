@@ -1,4 +1,5 @@
 #define _XOPEN_SOURCE 700
+#define _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -102,10 +103,10 @@ void interactive_run() {
 		struct sigaction old = {0};
 		promptAction.sa_handler = SIG_IGN;
 		if(sigaction(SIGINT, &promptAction, &old)) {
-		char* mess;
-		mess = "Blocking signals in main process failed, errno:";
+			char* mess;
+			mess = "Blocking signals in main process failed, errno:";
 
-		PRINT_ERR(mess, &errno, INT);
+			PRINT_ERR(mess, &errno, INT);
 		}
 
 		add_history(line);
@@ -146,8 +147,8 @@ void execute_line(char* line) {
 			}
 		}
 
-		char* left = {"<"};
-		char* right = {">"};
+		char* left = "<";
+		char* right = ">";
 		for(int j = 0; j < ((commands + i)->argc) - 1; j++) {
 			char* contains = strstr(*((commands + i)->value + j), left);
 			if(contains) {
@@ -210,16 +211,15 @@ void execute_line(char* line) {
 }
 
 void int_handler(int signum) {
-	printf("\n");
+	write(STDOUT_FILENO, "\n130 ", strlen("\n130 "));
+	/* I know SIG_INT has value of 2, so I can print 130 directly, cause this
+	 * function will only ever be used as handler for SIG_INT.
+	 */
 	rval = 128 + signum;
-	char* prompt = get_prompt();
 
-	rl_set_prompt(prompt);
 	rl_on_new_line();
 	rl_replace_line("", 0);
 	rl_redisplay();
-
-	FREE(prompt);
 }
 void set_env() {
 	if((cwd = getcwd(NULL, 0)) == NULL) {
