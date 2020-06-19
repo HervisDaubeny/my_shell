@@ -1,4 +1,3 @@
-#!/bin/bash
 CC = gcc
 F = flex
 S = src/
@@ -21,7 +20,7 @@ mysh.o: $(S)mysh.c
 
 ch_dir.o: $(S)ch_dir.c
 	$(CC) $(CFLAGS) -c $<
-	
+
 exit.o: $(S)exit.c
 	$(CC) $(CFLAGS) -c $<
 
@@ -37,29 +36,6 @@ fd_readl.o: $(S)fd_readl.c
 
 lex.yy.c: $(S)get_cmds.l
 	$(F) $<
-
-val: mysh
-	valgrind --tool=memcheck --leak-check=full --num-callers=20 ./mysh ~/School/Programing/unix-linux-prog-in-c-labs/final-assignment-tests/shell/test-011.mysh
-	#--show-leak-kinds=all
-	#--track-fds=yes 
-
-#test: $(TTARGETS)
-#
-#texec_bin: exec_bin.o
-#	$(CC) $< -o $@
-#
-#texec_bin.o: exec_bin.c
-#	$(CC) $(TFLAGS) $(CFLAGS) -c $<
-#
-#lex.yy.o: lex.yy.c
-#	$(CC) -w -c $<
-#	-w here is to ignore flex's unused variables, not mine warnings
-#
-#lex.yy.c: get_cmds.c
-#	$(F) $<
-#
-#%.o: %.c
-#	$(CC) $(TFLAGS) $(CFLAGS) -c $<
 
 clean:
 	@rm -fv *.o $(TTARGETS) $(REMOVE)
