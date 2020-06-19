@@ -1,7 +1,10 @@
+#define _GNU_SOURCE
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <errno.h>
+#include <limits.h>
 
 #include "exit.h"
 #include "utils.h"
@@ -17,13 +20,20 @@ int ext(struct command* cmd, int lret) {
 	}
 	else if(cmd->argc == 3) {
 		/* check numeric argument */
-		char** endn;
-		MALLOC(endn, sizeof(char**));
-		int rval = (int) strtol(*(cmd->value + 1), endn, 10);
+		char* endn = "";
+		errno = 0;
+		int rval = (int) strtol(*(cmd->value + 1), &endn, 10);
 
-		if(**endn == '\0') {
+		if(*endn == '\0') {
 			exit(rval);
 		}
+		else if(errno == ERANGE && (rval == INT_MAX || rval == INT_MIN)) {
+			char* mess;
+			mess = "Shelly: strtol errno:";
+
+			PRINT_ERR(mess, &errno, INT);
+      exit(2);
+    }
 		else {
 			char* mess;
 			mess = "Shelly: exit: numeric argument required:";
