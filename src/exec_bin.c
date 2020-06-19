@@ -1,4 +1,5 @@
 #define _XOPEN_SOURCE 700
+#define _GNU_SOURCE
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -66,25 +67,37 @@ int exec_pipe(struct command* commands, int cmdc) {
 
 	// get pipe length
 	for(int i = 0; i < NO_ITEMS; i++) {
-	 if(((commands + i)->sep) == '|') {
+	  if(((commands + i)->sep) == '|') {
 		 pipe_length++;
-	 }
-	 else {
+	  }
+	  else {
 		 break;
-	 }
+	  }
 	}
 
 	// create array to store pid of all childern
 	pid_t childern[pipe_length];
 	for(int i = 0; i < pipe_length; i++) {
-	 childern[i] = 0;
+	  childern[i] = 0;
 	}
 
 	// create two pipes
 	int r_pipe[2];
 	int w_pipe[2];
-	pipe(r_pipe);
-	pipe(w_pipe);
+	if(pipe(r_pipe)) {
+		char* mess;
+		mess = "creating reading pipe failed";
+
+		PRINT_ERR(mess, "", STRING);
+		exit(1);
+	}
+	if(pipe(w_pipe)) {
+		char* mess;
+		mess = "creating writing pipe failed";
+
+		PRINT_ERR(mess, "", STRING);
+		exit(1);
+	}
 
 	// execute pipeline
 	for(int index = 0; index < pipe_length; index++) {
@@ -143,7 +156,13 @@ int exec_pipe(struct command* commands, int cmdc) {
 			r_pipe[1] = w_pipe[1];
 
 			if(index < pipe_length - 1) {
-				pipe(w_pipe);
+				if(pipe(w_pipe)) {
+					char* mess;
+					mess = "creating writing pipe failed";
+
+					PRINT_ERR(mess, "", STRING);
+					exit(1);
+				}
 			}
 			else {
 				close(w_pipe[0]);
@@ -204,14 +223,14 @@ void redirect(char* input, char* output, int override) {
 		}
 		else {
 			/* expected error */
-			if (errno == 2) {
+			if (errno == ENOENT) {
 				char* mess;
 				mess = "Shelly: No such file or directory:";
 
 				PRINT_ERR(mess, input, STRING);
 				exit(1);
 			}
-			else if (errno == 13) {
+			else if (errno == EACCES) {
 				char* mess;
 				mess = "Shelly: Premission denied:";
 
