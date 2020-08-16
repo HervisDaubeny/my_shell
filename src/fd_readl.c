@@ -13,10 +13,10 @@
 int fd_open(char* file) {
 	int fd = open(file, O_RDONLY);
 	if (fd == -1) {
-		char* mess;
-		mess = "Shelly: error while opening file:";
+		char* msg;
+		msg = "Shelly: error while opening file:";
 
-		PRINT_ERR(mess, &errno, INT);
+		PRINT_ERR(msg, &errno, INT);
 		exit(1);
 	}
 
@@ -26,10 +26,10 @@ int fd_open(char* file) {
 int fd_close(int fd) {
 	int result = close(fd);
 	if (result == -1) {
-		char* mess;
-		mess = "Shelly: error while closing file:";
+		char* msg;
+		msg = "Shelly: error while closing file:";
 
-		PRINT_ERR(mess, &errno, INT);
+		PRINT_ERR(msg, &errno, INT);
 		exit(1);
 	}
 

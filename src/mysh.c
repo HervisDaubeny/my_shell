@@ -30,21 +30,21 @@ int main(int argc, char* const* argv) {
 
 	int opt;
 	while((opt = getopt(argc, argv, ":c:")) != -1) {
-		char* mess;
+		char* msg;
 
 		switch(opt) {
 			case 'c':
 				execute_line(optarg);
 				return rval;
 			case ':':
-				mess = "Shelly: option requires argument: -";
+				msg = "Shelly: option requires argument: -";
 
-				PRINT_ERR(mess, &optopt, STRING);
+				PRINT_ERR(msg, &optopt, STRING);
 				return 2;
 			case '?':
-				mess = "Shelly: invalid option: -";
+				msg = "Shelly: invalid option: -";
 
-				PRINT_ERR(mess, &optopt, STRING);
+				PRINT_ERR(msg, &optopt, STRING);
 				return 2;
 		}
 	}
@@ -83,10 +83,10 @@ void interactive_run() {
 	struct sigaction promptAction = {0};
 	promptAction.sa_handler = int_handler;
 	if(sigaction(SIGINT, &promptAction, NULL)) {
-		char* mess;
-		mess = "Assigning sig handler to main process failed, errno:";
+		char* msg;
+		msg = "Assigning sig handler to main process failed, errno:";
 
-		PRINT_ERR(mess, &errno, INT);
+		PRINT_ERR(msg, &errno, INT);
 	}
 
 	while(1) {
@@ -103,10 +103,10 @@ void interactive_run() {
 		struct sigaction old = {0};
 		promptAction.sa_handler = SIG_IGN;
 		if(sigaction(SIGINT, &promptAction, &old)) {
-			char* mess;
-			mess = "Blocking signals in main process failed, errno:";
+			char* msg;
+			msg = "Blocking signals in main process failed, errno:";
 
-			PRINT_ERR(mess, &errno, INT);
+			PRINT_ERR(msg, &errno, INT);
 		}
 
 		add_history(line);
@@ -114,10 +114,10 @@ void interactive_run() {
 
 		/* allow signals for main process after a command executed */
 		if(sigaction(SIGINT, &old, NULL)) {
-			char* mess;
-			mess = "Reenabling signals in main process failed, errno:";
+			char* msg;
+			msg = "Reenabling signals in main process failed, errno:";
 
-			PRINT_ERR(mess, &errno, INT);
+			PRINT_ERR(msg, &errno, INT);
 		}
 
 		FREE(prompt);
@@ -132,10 +132,10 @@ void execute_line(char* line) {
 	for(int i = 0; i < cmdc; i++) {
 		if((commands + i)->argc == 1) {
 			if(i + 1 < cmdc || *((commands + i)->value) == NULL) {
-				char* mess;
-				mess = "Shelly: syntax error near unexpected token:";
+				char* msg;
+				msg = "Shelly: syntax error near unexpected token:";
 
-				PRINT_ERR(mess, &(commands + i)->sep, STRING);
+				PRINT_ERR(msg, &(commands + i)->sep, STRING);
 
 				rval = 2;
 				cmd_check = 0;
@@ -152,10 +152,10 @@ void execute_line(char* line) {
 		for(int j = 0; j < ((commands + i)->argc) - 1; j++) {
 			char* contains = strstr(*((commands + i)->value + j), left);
 			if(contains) {
-				char* mess;
-				mess = "Shelly: syntax error near unexpected token:";
+				char* msg;
+				msg = "Shelly: syntax error near unexpected token:";
 
-				PRINT_ERR(mess, *((commands + i)->value + j), STRING);
+				PRINT_ERR(msg, *((commands + i)->value + j), STRING);
 				rval = 2;
 				cmd_check = 0;
 
@@ -164,10 +164,10 @@ void execute_line(char* line) {
 
 			contains = strstr(*((commands + i)->value + j), right);
 			if(contains) {
-				char* mess;
-				mess = "Shelly: syntax error near unexpected token:";
+				char* msg;
+				msg = "Shelly: syntax error near unexpected token:";
 
-				PRINT_ERR(mess, *((commands + i)->value + j), STRING);
+				PRINT_ERR(msg, *((commands + i)->value + j), STRING);
 				rval = 2;
 				cmd_check = 0;
 
@@ -223,10 +223,10 @@ void int_handler(int signum) {
 }
 void set_env() {
 	if((cwd = getcwd(NULL, 0)) == NULL) {
-		char* mess;
-		mess = "Shelly: Current working directory couldn't be	retrieved, errno:";
+		char* msg;
+		msg = "Shelly: Current working directory couldn't be	retrieved, errno:";
 
-		PRINT_ERR(mess, &errno, INT);
+		PRINT_ERR(msg, &errno, INT);
 		exit(1);
 	}
 	if((lwd = getenv("OLDPWD")) == NULL) {

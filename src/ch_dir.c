@@ -12,22 +12,30 @@ int cd(char** path, int argc, char* lastd) {
 	int rval = 0;
 
 	if(argc > 3) {
-		char* mess;
-		mess = "Shelly: cd: too many arguments\n";
+		char* msg;
+		msg = "Shelly: cd: too many arguments\n";
 
-		PRINT_ERR(mess, "", STRING);
+		PRINT_ERR(msg, "", STRING);
 		return 1;
 	}
 	else if(argc == 2) {
-		rval = change_dir(getenv("HOME"));
+		char* target = getenv("HOME");
+		if (target == NULL) {
+			char* msg;
+			msg = "Shelly: cd: HOME not set\n";
+
+			PRINT_ERR(msg, "", STRING);
+			return 0;
+		}
+		rval = change_dir(target);
 
 		return rval;
 	}
 	else if(argc < 2) {
-		char* mess;
-		mess = "cd was given a not NULL terminated array!";
+		char* msg;
+		msg = "cd was given a not NULL terminated array!";
 
-		PRINT_ERR(mess, "", STRING);
+		PRINT_ERR(msg, "", STRING);
 		exit(1);
 	}
 
@@ -48,16 +56,16 @@ int cd(char** path, int argc, char* lastd) {
 int change_dir(char* target) {
 	if((chdir(target)) < 0) {
 		if(errno == 2) {
-			char* mess;
-			mess = "Shelly: cd: no such file or directory:";
+			char* msg;
+			msg = "Shelly: cd: no such file or directory:";
 
-			PRINT_ERR(mess, target, STRING);
+			PRINT_ERR(msg, target, STRING);
 		}
 		else {
-			char* mess;
-			mess = "unknown errno:";
+			char* msg;
+			msg = "unknown errno:";
 
-			PRINT_ERR(mess, &errno, INT);
+			PRINT_ERR(msg, &errno, INT);
 			exit(1);
 		}
 

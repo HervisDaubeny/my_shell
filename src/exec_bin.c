@@ -39,10 +39,10 @@ int exec_bin(struct command* binary) {
 	}
 	else if(pid == -1) {
 		/* fork() failed */
-		char* mess;
-		mess = "Shelly: unable to fork, errno:";
+		char* msg;
+		msg = "Shelly: unable to fork, errno:";
 
-		PRINT_ERR(mess, &errno, INT);
+		PRINT_ERR(msg, &errno, INT);
 		exit(1);
 	}
 	else {
@@ -68,10 +68,10 @@ int exec_pipe(struct command* commands, int cmdc) {
 	// get pipe length
 	for(int i = 0; i < NO_ITEMS; i++) {
 	  if(((commands + i)->sep) == '|') {
-		 pipe_length++;
+			pipe_length++;
 	  }
 	  else {
-		 break;
+			break;
 	  }
 	}
 
@@ -85,17 +85,17 @@ int exec_pipe(struct command* commands, int cmdc) {
 	int r_pipe[2];
 	int w_pipe[2];
 	if(pipe(r_pipe)) {
-		char* mess;
-		mess = "creating reading pipe failed";
+		char* msg;
+		msg = "creating reading pipe failed";
 
-		PRINT_ERR(mess, "", STRING);
+		PRINT_ERR(msg, "", STRING);
 		exit(1);
 	}
 	if(pipe(w_pipe)) {
-		char* mess;
-		mess = "creating writing pipe failed";
+		char* msg;
+		msg = "creating writing pipe failed";
 
-		PRINT_ERR(mess, "", STRING);
+		PRINT_ERR(msg, "", STRING);
 		exit(1);
 	}
 
@@ -108,11 +108,13 @@ int exec_pipe(struct command* commands, int cmdc) {
 			struct sigaction childHandler = {0};
 			childHandler.sa_handler = child_killer;
 			if(sigaction(SIGINT, &childHandler, NULL)) {
-				char* mess;
-				mess = "assigning signal handler to child process failed, errno:";
+				char* msg;
+				msg = "assigning signal handler to child process failed, errno:";
 
-				PRINT_ERR(mess, &errno, INT);
+				PRINT_ERR(msg, &errno, INT);
 			}
+
+			// manage the pipes
 			if(index == 0) {
 				close(1);
 				dup(w_pipe[1]);
@@ -127,12 +129,12 @@ int exec_pipe(struct command* commands, int cmdc) {
 				close(1);
 				dup(w_pipe[1]);
 			}
-
 			close(r_pipe[0]);
 			close(r_pipe[1]);
 			close(w_pipe[0]);
 			close(w_pipe[1]);
 
+			// execute actual pipe command
 			redirect((commands + index)->input, (commands + index)->output, (commands + index)-> oout);
 			execute_child(commands + index);
 
@@ -141,10 +143,10 @@ int exec_pipe(struct command* commands, int cmdc) {
 		}
 		else if (pid == -1) {
 			/* fork() failed */
-			char* mess;
-			mess = "Shelly: unable to fork, errno:";
+			char* msg;
+			msg = "Shelly: unable to fork, errno:";
 
-			PRINT_ERR(mess, &errno, INT);
+			PRINT_ERR(msg, &errno, INT);
 			exit(1);
 		}
 		else {
@@ -157,10 +159,10 @@ int exec_pipe(struct command* commands, int cmdc) {
 
 			if(index < pipe_length - 1) {
 				if(pipe(w_pipe)) {
-					char* mess;
-					mess = "creating writing pipe failed";
+					char* msg;
+					msg = "creating writing pipe failed";
 
-					PRINT_ERR(mess, "", STRING);
+					PRINT_ERR(msg, "", STRING);
 					exit(1);
 				}
 			}
@@ -185,7 +187,7 @@ int exec_pipe(struct command* commands, int cmdc) {
 		}
 	}
 
- return child_exited;
+	return child_exited;
 }
 
 void execute_child(struct command* command) {
@@ -197,17 +199,17 @@ void execute_child(struct command* command) {
 	/* this code runs only if exec() failed */
 	if(ret) {
 		if(errno == 2) {
-			char* mess;
-			mess = "Shelly: command not found:";
+			char* msg;
+			msg = "Shelly: command not found:";
 
-			PRINT_ERR(mess, *(command->value), STRING);
+			PRINT_ERR(msg, *(command->value), STRING);
 			exit(127);
 		}
 		else {
-			char* mess;
-			mess = "Shelly: couldn't execute, errno:";
+			char* msg;
+			msg = "Shelly: couldn't execute, errno:";
 
-			PRINT_ERR(mess, &errno, INT);
+			PRINT_ERR(msg, &errno, INT);
 			exit(1);
 		}
 	}
@@ -224,26 +226,26 @@ void redirect(char* input, char* output, int override) {
 		else {
 			/* expected error */
 			if (errno == ENOENT) {
-				char* mess;
-				mess = "Shelly: No such file or directory:";
+				char* msg;
+				msg = "Shelly: No such file or directory:";
 
-				PRINT_ERR(mess, input, STRING);
+				PRINT_ERR(msg, input, STRING);
 				exit(1);
 			}
 			else if (errno == EACCES) {
-				char* mess;
-				mess = "Shelly: Premission denied:";
+				char* msg;
+				msg = "Shelly: Premission denied:";
 
-				PRINT_ERR(mess, input, STRING);
+				PRINT_ERR(msg, input, STRING);
 				exit(1);
 			}
 
 			/* unexpected error */
 			if (errno > 0) {
-				char* mess;
-				mess = "Shelly: unexpected error, errno:";
+				char* msg;
+				msg = "Shelly: unexpected error, errno:";
 
-				PRINT_ERR(mess, &errno, INT);
+				PRINT_ERR(msg, &errno, INT);
 				exit(1);
 			}
 		}
@@ -266,18 +268,18 @@ void redirect(char* input, char* output, int override) {
 		}
 		else {
 			if (errno == 13) {
-				char* mess;
-				mess = "Shelly: Premission denied:";
+				char* msg;
+				msg = "Shelly: Premission denied:";
 
-				PRINT_ERR(mess, output, STRING);
+				PRINT_ERR(msg, output, STRING);
 				exit(1);
 			}
 
 			if (errno > 0) {
-				char* mess;
-				mess = "Shelly: Unexpected error. Errno:";
+				char* msg;
+				msg = "Shelly: Unexpected error. Errno:";
 
-				PRINT_ERR(mess, &errno, INT);
+				PRINT_ERR(msg, &errno, INT);
 				exit(1);
 			}
 		}
