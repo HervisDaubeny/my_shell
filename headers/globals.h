@@ -15,6 +15,6 @@ char** get_hostname(void);
 char** get_login(void);
 int* get_cmdc(void);
 
-void set_globals();
+void set_globals(void);
 
 #endif
