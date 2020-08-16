@@ -54,6 +54,7 @@ while(0)
 		size = asprintf(&buffer, "%s %d\n", message, *((int*) argument));\
 	}\
 	if(size < 0) {\
+		FREE(buffer);\
 		exit(1);\
 	}\
 	write(STDERR_FILENO, buffer, strlen(buffer));\
