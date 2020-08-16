@@ -27,10 +27,10 @@ int exec_bin(struct command* binary) {
 		struct sigaction signalAction = {0};
 	  signalAction.sa_handler = child_killer;
 	  if(sigaction(SIGINT, &signalAction, NULL)) {
-			char* mess;
-			mess = "assigning signal handler to child process failed, errno:";
+			char* msg;
+			msg = "assigning signal handler to child process failed, errno:";
 
-			PRINT_ERR(mess, &errno, INT);
+			PRINT_ERR(msg, &errno, INT);
 		}
 
 		// Handle process execution
